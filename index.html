@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cidade Infinita — protótipo roguelike</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- Painel lateral com a mão de peças e info -->
+  <aside id="hud">
+    <h1>Cidade Infinita</h1>
+
+    <div class="panel">
+      <span class="label">Peça atual</span>
+      <canvas id="current" width="160" height="160" class="preview big"></canvas>
+      <button id="rotate">↻ Girar (R)</button>
+      <button id="skip" class="ghost">Descartar (D) — restam <span id="skips">3</span></button>
+    </div>
+
+    <div class="panel">
+      <span class="label">Próximas</span>
+      <div id="queue"></div>
+    </div>
+
+    <div class="panel stats">
+      <div><span class="label">Peças</span><strong id="placed">0</strong></div>
+      <div><span class="label">Pontos</span><strong id="score">0</strong></div>
+    </div>
+
+    <div class="panel help">
+      <span class="label">Controles</span>
+      <ul>
+        <li><b>Clique esq.</b> coloca a peça</li>
+        <li><b>R</b> gira a peça</li>
+        <li><b>D</b> descarta a peça atual</li>
+        <li><b>Arrastar (botão dir./meio)</b> ou <b>Espaço+arrastar</b> move o mapa</li>
+        <li><b>Scroll</b> dá zoom</li>
+      </ul>
+    </div>
+  </aside>
+
+  <div id="hint">Encaixe ruas com ruas e quarteirões com quarteirões.</div>
+
+  <script src="game.js"></script>
+</body>
+</html>
