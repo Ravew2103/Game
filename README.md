@@ -25,9 +25,9 @@ xdg-open index.html        # Linux
 
 ## Regras de encaixe (estilo Carcassonne)
 
-Cada lado de uma peça é **rua (R)** ou **quarteirão (B)**. Duas peças vizinhas só
-encaixam se os lados que se tocam forem do mesmo tipo, garantindo continuidade
-das ruas e dos quarteirões. A primeira peça vai na origem; as próximas precisam
+Cada lado de uma peça é **rua (R)**, **rio (W)** ou **quarteirão (B)**. Duas peças
+vizinhas só encaixam se os lados que se tocam forem do mesmo tipo, garantindo
+continuidade das ruas, dos rios e dos quarteirões. A primeira peça vai na origem; as próximas precisam
 encostar em alguma já colocada.
 
 ## Estrutura
