@@ -26,17 +26,13 @@ interior populado automaticamente. E onde uma **rua cruza um rio** nasce uma
 
 ## Como o preenchimento funciona
 
-Tudo é guardado como traços vetoriais em coordenadas de mundo. Para desenhar,
-o mundo é dividido em células cacheadas (só para performance). Em cada célula,
-o jogo espalha construções de forma determinística e decide cada lote por:
-
-- em cima da rua/rio → vazio (pavimento/água);
-- a **densidade** vem da **acessibilidade**: perto de uma via é denso; o fundo de
-  uma quadra grande (longe de qualquer via) vira vegetação/campo com latifúndios
-  ocasionais. Avenidas largas adensam mais fundo (centro);
-- **quadras muito grandes** ganham **vielas** geradas automaticamente, que dão
-  acesso ao miolo e o tornam habitável;
-- longe de tudo (fora da cidade) → papel.
+Tudo é guardado como traços vetoriais. O mundo é rasterizado para detectar as
+**quadras** (áreas entre vias) e medir **acessibilidade** (distância às vias).
+Cada quadra é então **subdividida recursivamente (BSP)** em lotes —
+retângulos e alguns triângulos de tamanhos distintos — orientados pela direção
+da rua que a forma, e que se encaixam (tesselam). A acessibilidade decide o que
+vira construção (perto das vias) e o que vira campo/hachura (fundo inacessível).
+Quadras grandes recebem **vielas** finas e orgânicas que dão acesso ao miolo.
 
 As áreas fechadas são detectadas rasterizando as vias e fazendo *flood-fill* a
 partir de fora: o que não é via e não foi alcançado de fora é interior fechado.
