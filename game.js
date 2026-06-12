@@ -61,6 +61,36 @@ function segInt(a, b, c, d) {       // interseção de dois segmentos
   if (t < 0 || t > 1 || u < 0 || u > 1) return null;
   return [a[0] + t * rx, a[1] + t * ry];
 }
+function projPoint(px, py, a, b) {  // ponto mais próximo no segmento
+  const dx = b[0] - a[0], dy = b[1] - a[1], len2 = dx * dx + dy * dy || 1;
+  const t = clamp(0, 1, ((px - a[0]) * dx + (py - a[1]) * dy) / len2);
+  return [a[0] + t * dx, a[1] + t * dy];
+}
+// "snap": gruda um ponto em vértices/linhas de traços existentes
+function getSnap(wx, wy, maxd) {
+  let best = null, bd = maxd;
+  for (const s of strokes) for (const v of [s.pts[0], s.pts[s.pts.length - 1]]) {
+    const d = Math.hypot(v[0] - wx, v[1] - wy); if (d < bd) { bd = d; best = [v[0], v[1]]; }
+  }
+  for (const s of strokes) for (let i = 1; i < s.pts.length; i++) {
+    const pr = projPoint(wx, wy, s.pts[i - 1], s.pts[i]);
+    const d = Math.hypot(pr[0] - wx, pr[1] - wy); if (d < bd) { bd = d; best = pr; }
+  }
+  return best;
+}
+// suavização (média móvel) preservando as pontas (mantém o snap)
+function smooth(pts) {
+  if (pts.length < 3) return pts;
+  let p = pts;
+  for (let pass = 0; pass < 2; pass++) {
+    const out = [p[0]];
+    for (let i = 1; i < p.length - 1; i++)
+      out.push([0.25 * p[i - 1][0] + 0.5 * p[i][0] + 0.25 * p[i + 1][0],
+                0.25 * p[i - 1][1] + 0.5 * p[i][1] + 0.25 * p[i + 1][1]]);
+    out.push(p[p.length - 1]); p = out;
+  }
+  return p;
+}
 
 /* ===================== Textura de papel =============================== */
 const noiseCanvas = (() => {
@@ -139,13 +169,36 @@ function computeEnclosed() {
     if (y > 0) seed(x, y - 1); if (y < h - 1) seed(x, y + 1);
   }
   for (let i = 0; i < data.length; i++) if (data[i] === 0) data[i] = 2; // interior fechado
-  enc = { x0, y0, G, w, h, data };
+
+  // densidade por área: cada bloco fechado (componente conexo) -> quanto menor, mais denso
+  const dens = new Uint8Array(w * h), seen = new Uint8Array(w * h);
+  for (let i = 0; i < data.length; i++) {
+    if (data[i] !== 2 || seen[i]) continue;
+    const comp = [i]; seen[i] = 1;
+    for (let qi = 0; qi < comp.length; qi++) {
+      const j = comp[qi], x = j % w, y = (j / w) | 0;
+      if (x > 0 && data[j - 1] === 2 && !seen[j - 1]) { seen[j - 1] = 1; comp.push(j - 1); }
+      if (x < w - 1 && data[j + 1] === 2 && !seen[j + 1]) { seen[j + 1] = 1; comp.push(j + 1); }
+      if (y > 0 && data[j - w] === 2 && !seen[j - w]) { seen[j - w] = 1; comp.push(j - w); }
+      if (y < h - 1 && data[j + w] === 2 && !seen[j + w]) { seen[j + w] = 1; comp.push(j + w); }
+    }
+    const L = Math.sqrt(comp.length * G * G);          // lado característico do bloco
+    const dv = (clamp(0.4, 1, 1 - (L - 120) / 380 * 0.6) * 255) | 0;
+    for (const j of comp) dens[j] = dv;
+  }
+  enc = { x0, y0, G, w, h, data, dens };
 }
 function sampleEnclosed(wx, wy) {
   if (!enc) return false;
   const gx = Math.floor((wx - enc.x0) / enc.G), gy = Math.floor((wy - enc.y0) / enc.G);
   if (gx < 0 || gy < 0 || gx >= enc.w || gy >= enc.h) return false;
   return enc.data[gy * enc.w + gx] === 2;
+}
+function sampleDensity(wx, wy) {
+  if (!enc || !enc.dens) return 0;
+  const gx = Math.floor((wx - enc.x0) / enc.G), gy = Math.floor((wy - enc.y0) / enc.G);
+  if (gx < 0 || gy < 0 || gx >= enc.w || gy >= enc.h) return 0;
+  return enc.dens[gy * enc.w + gx] / 255;
 }
 
 /* ---- recomputa mundo (chamado quando os traços mudam) ---- */
@@ -219,11 +272,17 @@ function generateCellSprite(cx, cy) {
       const enclosed = sampleEnclosed(wx, wy);
       if (!nearRoad && !enclosed) continue;
 
-      if (rng() < 0.1) { drawTree(ctx, lx, ly, rng); continue; }
+      // densidade inferida: bloco menor / avenida larga -> mais denso
+      let density = 0.55;
+      if (enclosed) density = Math.max(density, sampleDensity(wx, wy));
+      if (nearRoad) density = Math.max(density, clamp(0.55, 1, 0.5 + r.seg.w / 90));
+      if (rng() > density) { if (rng() < 0.45) drawTree(ctx, lx, ly, rng); continue; } // vãos / jardins
+
       let ang = rng() * Math.PI;                                // orienta à via mais próxima
       if (nearRoad) ang = Math.atan2(r.seg.by - r.seg.ay, r.seg.bx - r.seg.ax);
       else { const wn = nearest(wx, wy, wallSegs); if (wn.seg) ang = Math.atan2(wn.seg.by - wn.seg.ay, wn.seg.bx - wn.seg.ax); }
-      drawBuilding(ctx, lx, ly, ang, 6 + rng() * 7, 6 + rng() * 6, ROOF_COLORS[(rng() * ROOF_COLORS.length) | 0]);
+      const sc = 0.8 + density * 0.7;                           // mais denso -> lotes maiores
+      drawBuilding(ctx, lx, ly, ang, (5 + rng() * 6) * sc, (5 + rng() * 5) * sc, ROOF_COLORS[(rng() * ROOF_COLORS.length) | 0]);
     }
   }
 
@@ -277,7 +336,12 @@ function line(ctx, ax, ay, bx, by) { ctx.beginPath(); ctx.moveTo(ax, ay); ctx.li
 function strokePoly(ctx, pts, width, color) {
   ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = "round"; ctx.lineJoin = "round";
   ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
-  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  if (pts.length < 3) { for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]); }
+  else {                                   // curva suave passando pelos pontos
+    for (let i = 1; i < pts.length - 1; i++)
+      ctx.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2);
+    ctx.lineTo(pts[pts.length - 1][0], pts[pts.length - 1][1]);
+  }
   ctx.stroke();
 }
 function medianTrees(ctx, lp) {
@@ -390,6 +454,10 @@ function selectTool(t) {
 /* ===================== Edição ======================================= */
 function finalizeStroke(s) {
   if (s.pts.length === 1) s.pts.push([s.pts[0][0] + 0.5, s.pts[0][1] + 0.5]);
+  const end = s.pts[s.pts.length - 1];                        // gruda a ponta final
+  const sn = getSnap(end[0], end[1], Math.max(16 / camera.scale, s.width * 0.7));
+  if (sn) s.pts[s.pts.length - 1] = sn;
+  s.pts = smooth(s.pts);                                      // alisa (mantém as pontas)
   s.bbox = strokeBBox(s);
   strokes.push(s);
   refreshWorld();
@@ -429,7 +497,13 @@ canvas.addEventListener("pointerdown", (ev) => {
   const panGesture = tool === "hand" || (ev.pointerType === "mouse" && (ev.button === 1 || ev.button === 2 || spaceDown));
   if (panGesture) mode = "pan";
   else if (tool === "erase") { mode = "erase"; const [wx, wy] = s2w(ev.clientX, ev.clientY); eraseAt(wx, wy); }
-  else { mode = "draw"; current = { type: tool, width: toolWidth[tool], pts: [s2w(ev.clientX, ev.clientY)] }; }
+  else {
+    mode = "draw";
+    let sp = s2w(ev.clientX, ev.clientY);                     // gruda a ponta inicial
+    const sn = getSnap(sp[0], sp[1], Math.max(16 / camera.scale, toolWidth[tool] * 0.7));
+    if (sn) sp = sn;
+    current = { type: tool, width: toolWidth[tool], pts: [sp] };
+  }
   ev.preventDefault();
 }, { passive: false });
 
