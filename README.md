@@ -1,45 +1,42 @@
 # Cidade Infinita
 
-Protótipo de um jogo **roguelike de construção de mapa**: você vai montando uma
-cidade encaixando **peças quadradas**, e o mapa cresce indefinidamente.
-
-A grade é quadrada, mas o **conteúdo** de cada peça é gerado proceduralmente com
-ruas que curvam e quarteirões irregulares — a intenção é que a cidade pareça
-**orgânica**, baseada em traçados reais, e não num quadriculado.
+Construtor de cidade **procedural e contínua**: você escolhe onde expandir e o
+jogo gera aquele pedaço da cidade. O mapa cresce indefinidamente e o traçado
+(ruas, rio, quarteirões) **flui de forma contínua entre as peças**, sem cara de
+retalhos quadriculados.
 
 ## Como jogar
 
-Abra o `index.html` no navegador (não precisa de servidor):
+Abra o `index.html` no navegador (não precisa de servidor) — ou acesse a versão
+publicada no GitHub Pages.
 
-```bash
-# opção simples
-xdg-open index.html        # Linux
-# ou apenas dê duplo-clique no arquivo
-```
+- **Toque / clique** numa célula destacada: o jogo constrói aquele pedaço
+- As células ao redor aparecem como **esboço** (a cidade já gerada) — é só tocar
+- **Arrastar** (1 dedo) move o mapa; **pinça** (2 dedos) ou **slider** dá zoom
+- **Nova cidade** sorteia uma cidade totalmente diferente
 
-- **Clique esquerdo** coloca a peça atual
-- **R** gira a peça
-- **D** descarta a peça atual (limitado)
-- **Arrastar** com botão direito/meio (ou **Espaço + arrastar**) move o mapa
-- **Scroll** dá zoom
+## Como a continuidade funciona
 
-## Regras de encaixe (estilo Carcassonne)
-
-Cada lado de uma peça é **rua (R)**, **rio (W)** ou **quarteirão (B)**. Duas peças
-vizinhas só encaixam se os lados que se tocam forem do mesmo tipo, garantindo
-continuidade das ruas, dos rios e dos quarteirões. A primeira peça vai na origem; as próximas precisam
-encostar em alguma já colocada.
+Não há regras de encaixe nem peças pré-definidas. Cada **borda** entre duas
+células tem um perfil determinístico, calculado por *hash* das coordenadas
+globais da borda: se uma rua a cruza e em que posição. Como dois vizinhos
+derivam a **mesma** borda do mesmo hash, as ruas atravessam as peças de forma
+contínua. Dentro de cada peça os pontos das bordas são ligados por curvas, e os
+quarteirões são preenchidos evitando ruas e rio — o que faz os blocos se
+estenderem naturalmente para os vizinhos. O **rio** é uma curva global que
+serpenteia pelo mapa inteiro.
 
 ## Estrutura
 
-- `index.html` — tela e painel lateral (mão de peças, pontos, controles)
-- `style.css` — estilo da interface
-- `game.js` — toda a lógica: definição de peças, encaixe, geração procedural do
-  desenho de cada peça, câmera infinita (pan/zoom), baralho roguelike e pontuação
+- `index.html` — tela e painel (zoom, grade, nova cidade, ajuda)
+- `style.css` — estilo da interface (responsivo, mobile)
+- `game.js` — geração procedural contínua, câmera infinita (pan/zoom/inércia),
+  textura de papel e controles por toque
 
 ## Próximos passos (ideias)
 
-- Mais tipos de traçado (avenidas, rios, praças, diagonais) para mais variedade
-- Pontuação por "features" completas (quarteirões fechados, ruas longas)
-- Objetivos/eventos roguelike (cartas, distritos especiais, modificadores)
+- **Pontes** onde a rua cruza o rio
+- Avenidas/ruas principais correlacionadas (eixos mais longos)
+- Distritos com caráter próprio (centro denso, periferia, parques, porto)
+- Rótulos e textura de pena/nanquim para reforçar o aspecto desenhado à mão
 - Salvar/carregar a cidade

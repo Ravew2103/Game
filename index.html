@@ -12,16 +12,8 @@
   <aside id="hud">
     <div class="brand">Cidade Infinita</div>
 
-    <div class="row main">
-      <canvas id="current" width="150" height="150" class="preview"></canvas>
-      <div class="btns">
-        <button id="rotate">↻ Girar</button>
-        <button id="skip" class="ghost">Descartar (<span id="skips">3</span>)</button>
-        <div class="queue-wrap">
-          <span class="label">Próximas</span>
-          <div id="queue"></div>
-        </div>
-      </div>
+    <div class="row stats">
+      <div><span class="label">Peças</span><strong id="placed">0</strong></div>
     </div>
 
     <div class="row controls">
@@ -32,18 +24,15 @@
       <label class="toggle"><input id="gridchk" type="checkbox" checked /> Grade</label>
     </div>
 
-    <div class="row stats">
-      <div><span class="label">Peças</span><strong id="placed">0</strong></div>
-      <div><span class="label">Pontos</span><strong id="score">0</strong></div>
-    </div>
+    <div class="row"><button id="newcity">✦ Nova cidade</button></div>
 
     <details class="help">
       <summary>Como jogar</summary>
       <ul>
-        <li><b>Toque / clique</b> em uma célula destacada para colocar a peça</li>
-        <li><b>Arraste</b> (1 dedo) para mover o mapa</li>
-        <li><b>Pinça</b> (2 dedos) ou <b>slider</b> para o zoom</li>
-        <li><b>Girar</b> ajusta a peça antes de colocar</li>
+        <li><b>Toque</b> numa célula destacada e o jogo gera aquele pedaço da cidade</li>
+        <li>O traçado continua <b>contínuo</b> entre as peças — ruas e rio fluem</li>
+        <li>As células em volta aparecem como <b>esboço</b>: é só tocar para construir</li>
+        <li><b>Arraste</b> para mover, <b>pinça</b>/slider para o zoom</li>
       </ul>
     </details>
   </aside>
