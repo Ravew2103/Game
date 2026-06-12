@@ -120,14 +120,18 @@ function generateCellSprite(cx, cy) {
 
   // segmentos próximos, separados por tipo
   const ex0 = ox - M, ey0 = oy - M, ex1 = ox + TILE + M, ey1 = oy + TILE + M;
-  const roadSegs = [], riverSegs = [], blockSegs = [], nearRoads = [], nearRivers = [];
+  const roadSegs = [], riverSegs = [], blockSegs = [], blockPolys = [];
+  const nearRoads = [], nearRivers = [], nearBlocks = [];
   for (const s of strokes) {
     if (!bboxIntersect(s.bbox, ex0, ey0, ex1, ey1)) continue;
+    if (s.type === "river") nearRivers.push(s);
+    else if (s.type === "block") { nearBlocks.push(s); blockPolys.push(s.pts); }
+    else nearRoads.push(s);
     const dst = s.type === "river" ? riverSegs : s.type === "block" ? blockSegs : roadSegs;
-    if (s.type === "river") nearRivers.push(s); else if (s.type !== "block") nearRoads.push(s);
-    for (let i = 1; i < s.pts.length; i++) {
-      const ax = s.pts[i - 1][0], ay = s.pts[i - 1][1], bx = s.pts[i][0], by = s.pts[i][1];
-      // descarta segmentos longe desta célula
+    const n = s.pts.length, lim = s.type === "block" ? n : n - 1; // quadra fecha o polígono
+    for (let i = 0; i < lim; i++) {
+      const a = s.pts[i], b = s.pts[(i + 1) % n];
+      const ax = a[0], ay = a[1], bx = b[0], by = b[1];
       if (Math.max(ax, bx) < ex0 || Math.min(ax, bx) > ex1 || Math.max(ay, by) < ey0 || Math.min(ay, by) > ey1) continue;
       dst.push({ ax, ay, bx, by, w: s.width });
     }
@@ -151,23 +155,47 @@ function generateCellSprite(cx, cy) {
       const r = nearest(wx, wy, roadSegs);
       if (r.seg && r.d < r.seg.w / 2 + 3) continue;        // em cima da rua
 
-      const b = nearest(wx, wy, blockSegs);
-      const inBlock = b.seg && b.d < b.seg.w / 2;
+      // quadra = interior do perímetro desenhado pelo jogador
+      let inBlock = false;
+      for (const poly of blockPolys) if (pointInPolygon(wx, wy, poly)) { inBlock = true; break; }
       const nearRoad = r.seg && r.d < r.seg.w / 2 + FRONTAGE;
       if (!inBlock && !nearRoad) continue;                  // longe de tudo -> papel
 
       if (rng() < 0.1) { drawTree(ctx, lx, ly, rng); continue; }
-      // orienta a construção pela via mais próxima (casas voltadas à rua)
+      // orienta a construção: pela via mais próxima ou, dentro da quadra, pela borda dela
       let ang = rng() * Math.PI;
       if (nearRoad) ang = Math.atan2(r.seg.by - r.seg.ay, r.seg.bx - r.seg.ax);
+      else if (inBlock && blockSegs.length) {
+        const be = nearest(wx, wy, blockSegs);
+        if (be.seg) ang = Math.atan2(be.seg.by - be.seg.ay, be.seg.bx - be.seg.ax);
+      }
       drawBuilding(ctx, lx, ly, ang, 6 + rng() * 7, 6 + rng() * 6, ROOF_COLORS[(rng() * ROOF_COLORS.length) | 0]);
     }
   }
+
+  // contorno discreto das quadras (o perímetro que você desenhou)
+  for (const s of nearBlocks) drawBlockOutline(ctx, s, ox, oy);
 
   // ruas / avenidas por cima
   for (const s of nearRoads) drawStrokeLocal(ctx, s, ox, oy);
 
   return cv;
+}
+
+function pointInPolygon(x, y, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+function drawBlockOutline(ctx, s, ox, oy) {
+  if (s.pts.length < 3) return;
+  ctx.strokeStyle = "rgba(74,58,35,0.28)"; ctx.lineWidth = 1.4; ctx.lineJoin = "round";
+  ctx.beginPath(); ctx.moveTo(s.pts[0][0] - ox, s.pts[0][1] - oy);
+  for (let i = 1; i < s.pts.length; i++) ctx.lineTo(s.pts[i][0] - ox, s.pts[i][1] - oy);
+  ctx.closePath(); ctx.stroke();
 }
 
 function drawStrokeLocal(ctx, s, ox, oy) {
@@ -265,13 +293,17 @@ function render() {
 
   // traço sendo desenhado agora (feedback imediato, em tela)
   if (current) {
+    const isBlock = current.type === "block";
     const col = current.type === "river" ? "rgba(120,170,180,0.85)"
-      : current.type === "block" ? "rgba(150,120,70,0.4)" : "rgba(40,33,24,0.9)";
-    ctx.strokeStyle = col; ctx.lineWidth = current.width * camera.scale;
-    ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.beginPath();
+      : isBlock ? "rgba(90,70,40,0.9)" : "rgba(40,33,24,0.9)";
+    ctx.strokeStyle = col; ctx.lineWidth = isBlock ? 2 : current.width * camera.scale;
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    if (isBlock) ctx.setLineDash([6, 6]);
+    ctx.beginPath();
     const p0 = w2s(current.pts[0][0], current.pts[0][1]); ctx.moveTo(p0[0], p0[1]);
     for (let i = 1; i < current.pts.length; i++) { const p = w2s(current.pts[i][0], current.pts[i][1]); ctx.lineTo(p[0], p[1]); }
-    ctx.stroke();
+    if (isBlock && current.pts.length > 2) { ctx.lineTo(p0[0], p0[1]); } // dica de fechamento
+    ctx.stroke(); ctx.setLineDash([]);
   }
 
   // grão de papel por cima (uniforme, sem emendas)
@@ -387,7 +419,10 @@ addEventListener("keydown", (ev) => { if (ev.code === "Space") { spaceDown = tru
 addEventListener("keyup", (ev) => { if (ev.code === "Space") spaceDown = false; });
 
 /* ===================== UI ============================================ */
-for (const b of document.querySelectorAll("#tools button")) b.addEventListener("click", () => selectTool(b.dataset.tool));
+document.getElementById("tools").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (b && b.dataset.tool) selectTool(b.dataset.tool);
+});
 sizeSlider.addEventListener("input", () => { if (toolWidth[tool] !== undefined && tool !== "hand") toolWidth[tool] = parseInt(sizeSlider.value, 10); });
 zoomSlider.addEventListener("input", () => setZoom(parseFloat(zoomSlider.value), innerWidth / 2, innerHeight * 0.42));
 document.getElementById("gridchk").addEventListener("change", (e) => { showGrid = e.target.checked; });

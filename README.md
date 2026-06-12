@@ -10,7 +10,8 @@ estética de mapa desenhado à mão.
 - **Rua** / **Avenida** — traço preto (a avenida é mais larga, com faixa central).
   O jogo faz construções nascerem ao longo da via.
 - **Rio** — água azul-clara que serpenteia (quarteirões não invadem a água).
-- **Quadra** — pinta uma área densa de construções.
+- **Quadra** — desenhe o **perímetro** de um quarteirão e o jogo preenche o
+  interior com construções (orientadas pelas bordas da quadra).
 - **Borracha** — apaga traços tocados.
 - **Espessura** — slider que define a grossura do pincel atual.
 

@@ -15,11 +15,12 @@ html, body {
   -webkit-user-select: none; user-select: none; overscroll-behavior: none;
 }
 
-#game { position: fixed; inset: 0; display: block; touch-action: none; }
+#game { position: fixed; inset: 0; display: block; touch-action: none; z-index: 1; }
 
 #hud {
-  position: fixed; top: 0; right: 0; width: 250px; height: 100%;
-  padding: 14px; background: var(--panel); backdrop-filter: blur(6px);
+  position: fixed; top: 0; right: 0; width: 250px; height: 100%; z-index: 10;
+  padding: 14px; background: var(--panel);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   border-left: 1px solid #000; display: flex; flex-direction: column; gap: 12px;
   overflow-y: auto;
 }
@@ -30,7 +31,8 @@ html, body {
 
 .tools { display: flex; flex-wrap: wrap; gap: 6px; }
 .tools button {
-  flex: 1 1 auto; background: rgba(255,255,255,0.06); color: var(--ink);
+  flex: 1 0 28%; min-height: 40px; touch-action: manipulation;
+  background: rgba(255,255,255,0.06); color: var(--ink);
   border: 1px solid #4a4234; border-radius: 8px; padding: 8px 6px;
   font-size: 13px; font-weight: 600; cursor: pointer;
 }
