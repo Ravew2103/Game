@@ -20,16 +20,17 @@ const M = 80;               // alcance de influência de um traço sobre uma cé
 const FRONTAGE = 22;        // faixa de construção ao longo das vias
 const SEED = 0x9e3779b9;
 
-const PAPER = "#e7d8b6";
-const STREET = "#efe7cf";
+const PAPER = "#e9e1c6";
+const STREET = "#f2ecda";
 const INK = "#4a3a23";
-const LANE = "rgba(120,95,55,0.55)";
+const LANE = "rgba(120,95,55,0.45)";
 const TREE_GREEN = "#6f8a4a";
 const PARK_GREEN = "#8a9b5c";
 const WATER = "#8fb1b4";
 const WATER_INK = "#5c8084";
 const WATER_HI = "#bcd6d6";
-const ROOF_COLORS = ["#cdb389", "#c2a06f", "#b98c5a", "#d8c39a", "#bca16d", "#a9824f", "#c69c6d"];
+const BUILD_INK = "rgba(55,38,20,0.78)";
+const ROOF_COLORS = ["#cf9a63", "#c98a4f", "#c5833f", "#d2a06a", "#bd7e44", "#c79257", "#caa06a"];
 
 /* ===================== RNG / utils ==================================== */
 function hash2(x, y) {
@@ -111,7 +112,7 @@ const noiseCanvas = (() => {
 // stroke: { type:'road'|'river', width, pts:[[wx,wy]...], bbox }
 let strokes = [];
 let alleys = [];                 // vielas geradas dentro de quadras grandes
-const ALLEY_W = 8;
+const ALLEY_W = 5;
 const activeCells = new Set();
 const spriteCache = new Map();
 
@@ -199,20 +200,27 @@ function refreshWorld() {
     activeCells.add(Math.floor(wx / TILE) + "," + Math.floor(wy / TILE));
   }
 }
-// Subdivide quadras grandes com "vielas" para dar acesso ao miolo.
+// Subdivide quadras grandes com "vielas" finas, orgânicas e caóticas, dando
+// acesso ao miolo. As vielas ondulam e têm espaçamento irregular.
 function generateAlleys() {
   alleys = [];
   if (!enc) return;
   const { x0, y0, G, w, h, data } = enc;
   const seen = new Uint8Array(w * h);
-  const spacing = Math.max(3, Math.round(110 / G)), ext = G * 1.6;
+  const ext = G * 1.6;
   const isIn = (gx, gy) => gx >= 0 && gy >= 0 && gx < w && gy < h && data[gy * w + gx] === 2;
-  const addSpan = (fixedWorld, a, b, vertical) => {
-    const p1 = vertical ? [fixedWorld, a - ext] : [a - ext, fixedWorld];
-    const p2 = vertical ? [fixedWorld, b + ext] : [b + ext, fixedWorld];
-    const s = { type: "road", width: ALLEY_W, pts: [p1, p2] }; s.bbox = strokeBBox(s); alleys.push(s);
+  // cria uma viela ondulada entre [a,b] na coordenada fixa; ondula só no meio
+  const addSpan = (fixedWorld, a, b, vertical, rng) => {
+    const len = (b - a) + 2 * ext, n = Math.max(2, Math.round(len / 22)), amp = 7 + rng() * 8;
+    const ph = rng() * Math.PI * 2, pts = [];
+    for (let k = 0; k <= n; k++) {
+      const t = k / n, along = (a - ext) + len * t;
+      const off = Math.sin(t * Math.PI) * amp * Math.sin(t * 3 + ph);   // 0 nas pontas
+      pts.push(vertical ? [fixedWorld + off, along] : [along, fixedWorld + off]);
+    }
+    const s = { type: "road", width: ALLEY_W, pts }; s.bbox = strokeBBox(s); alleys.push(s);
   };
-  const carve = (fixed, lo, hi, vertical) => {
+  const carve = (fixed, lo, hi, vertical, rng) => {
     const fixedWorld = (vertical ? x0 : y0) + (fixed + 0.5) * G;
     let start = null;
     for (let v = lo; v <= hi + 1; v++) {
@@ -221,7 +229,7 @@ function generateAlleys() {
       else if (start !== null) {
         if (v - 1 - start >= 2) {
           const aW = (vertical ? y0 : x0) + (start + 0.5) * G, bW = (vertical ? y0 : x0) + (v - 0.5) * G;
-          addSpan(fixedWorld, aW, bW, vertical);
+          addSpan(fixedWorld, aW, bW, vertical, rng);
         }
         start = null;
       }
@@ -239,9 +247,13 @@ function generateAlleys() {
       if (y > 0 && data[j - w] === 2 && !seen[j - w]) { seen[j - w] = 1; comp.push(j - w); }
       if (y < h - 1 && data[j + w] === 2 && !seen[j + w]) { seen[j + w] = 1; comp.push(j + w); }
     }
-    if (Math.sqrt(cnt * G * G) < 220) continue;        // quadra pequena: dispensa viela
-    for (let gx = minx + spacing; gx < maxx; gx += spacing) carve(gx, miny, maxy, true);
-    for (let gy = miny + spacing; gy < maxy; gy += spacing) carve(gy, minx, maxx, false);
+    if (Math.sqrt(cnt * G * G) < 200) continue;        // quadra pequena: dispensa viela
+    const rng = mulberry32((hash2(minx, miny) ^ SEED) >>> 0);
+    const base = Math.max(3, Math.round(85 / G));      // espaçamento base (células)
+    for (let gx = minx + base * (0.4 + rng()); gx < maxx; gx += base * (0.6 + rng() * 1.0))
+      if (rng() < 0.85) carve(Math.round(gx), miny, maxy, true, rng);
+    for (let gy = miny + base * (0.4 + rng()); gy < maxy; gy += base * (0.6 + rng() * 1.0))
+      if (rng() < 0.85) carve(Math.round(gy), minx, maxx, false, rng);
   }
 }
 
@@ -284,12 +296,11 @@ function generateCellSprite(cx, cy) {
   for (const s of nearRivers) riverPass(ctx, s, ox, oy, 1);
   for (const s of nearRivers) riverPass(ctx, s, ox, oy, 2);
 
-  // construções: faixa ao longo das vias + interior de áreas fechadas.
-  // Lattice mais espaçado -> lotes distintos (menos quadradinhos sobrepostos).
-  const step = 13;
-  for (let gx = step / 2; gx < TILE; gx += step) {
-    for (let gy = step / 2; gy < TILE; gy += step) {
-      const lx = gx + (rng() - 0.5) * 3, ly = gy + (rng() - 0.5) * 3;
+  // construções: parcelas compactas ao longo das vias e no interior acessível.
+  const PLOT = 12;
+  for (let gx = PLOT / 2; gx < TILE; gx += PLOT) {
+    for (let gy = PLOT / 2; gy < TILE; gy += PLOT) {
+      const lx = gx + (rng() - 0.5) * 4, ly = gy + (rng() - 0.5) * 4;
       const wx = ox + lx, wy = oy + ly;
 
       let onWater = false;
@@ -297,7 +308,7 @@ function generateCellSprite(cx, cy) {
       if (onWater) continue;
 
       const r = nearest(wx, wy, roadSegs);
-      if (r.seg && r.d < r.seg.w / 2 + 3) continue;            // em cima da via
+      if (r.seg && r.d < r.seg.w / 2 + 2) continue;            // em cima da via
 
       const nearRoad = r.seg && r.d < r.seg.w / 2 + FRONTAGE;
       const enclosed = sampleEnclosed(wx, wy);
@@ -312,13 +323,15 @@ function generateCellSprite(cx, cy) {
       const wn = nearest(wx, wy, wallSegs);
       const ang = wn.seg ? Math.atan2(wn.seg.by - wn.seg.ay, wn.seg.bx - wn.seg.ax) : rng() * Math.PI;
 
-      if (rng() < access) {                                    // construção
-        const sc = 0.95 + access * 0.25;
-        drawBuilding(ctx, lx, ly, ang, (7 + rng() * 4) * sc, (6 + rng() * 3) * sc, ROOF_COLORS[(rng() * ROOF_COLORS.length) | 0], rng);
-      } else if (enclosed && access < 0.3) {                   // fundo de quadrão: campo
+      if (rng() < access) {                                    // parcela construída
+        const big = rng() < 0.12 ? 1.5 : 1;                    // alguns lotes maiores
+        const pw = PLOT * (0.7 + rng() * 0.5) * big, ph = PLOT * (0.7 + rng() * 0.5) * big;
+        drawBuilding(ctx, lx, ly, ang, pw, ph, ROOF_COLORS[(rng() * ROOF_COLORS.length) | 0], rng);
+      } else if (enclosed && access < 0.32) {                  // fundo de quadrão: campo
         const v = rng();
-        if (v < 0.05) drawEstate(ctx, lx, ly, ang, rng);       // latifúndio / propriedade grande
-        else if (v < 0.55) drawTree(ctx, lx, ly, rng);         // mata / pasto
+        if (v < 0.05) drawEstate(ctx, lx, ly, ang, rng);       // propriedade grande
+        else if (v < 0.45) drawHatch(ctx, lx, ly, rng);        // plantação (hachura)
+        else if (v < 0.62) drawTree(ctx, lx, ly, rng);         // mata / pasto
         // senão: campo aberto (papel)
       } else if (rng() < 0.35) {
         drawTree(ctx, lx, ly, rng);                            // jardins / vãos
@@ -331,26 +344,28 @@ function generateCellSprite(cx, cy) {
   for (const s of nearRoads) roadPass(ctx, s, ox, oy, 1);
   drawBridges(ctx, roadSegs, riverSegs, ox, oy);
   for (const s of nearRoads) roadPass(ctx, s, ox, oy, 2);
-  junctionPatches(ctx, roadSegs, ox, oy);          // cruzamentos cortam canteiros/faixas
+  medianGaps(ctx, roadSegs, ox, oy);               // abre o canteiro só em alguns cruzamentos
 
   return cv;
 }
-// nos cruzamentos, repinta asfalto para "cortar" canteiro central e faixas
-function junctionPatches(ctx, roadSegs, ox, oy) {
-  for (let i = 0; i < roadSegs.length; i++) for (let j = i + 1; j < roadSegs.length; j++) {
-    const a = roadSegs[i], b = roadSegs[j];
-    if (Math.max(a.w, b.w) < 28) continue;          // só onde há canteiro/faixa a cortar
-    const ip = segInt([a.ax, a.ay], [a.bx, a.by], [b.ax, b.ay], [b.bx, b.by]);
-    if (!ip) continue;
-    patchBand(ctx, ip, a, b.w + 6, a.w, ox, oy);
-    patchBand(ctx, ip, b, a.w + 6, b.w, ox, oy);
+// O canteiro central das avenidas é contínuo; abre apenas OCASIONALMENTE onde
+// outra via cruza, para os veículos poderem atravessar.
+function medianGaps(ctx, roadSegs, ox, oy) {
+  for (const a of roadSegs) {
+    if (a.w < 44) continue;                          // só avenidas com canteiro
+    const mw = Math.max(6, a.w * 0.26) + 2;
+    const dl = Math.hypot(a.bx - a.ax, a.by - a.ay) || 1;
+    const dx = (a.bx - a.ax) / dl, dy = (a.by - a.ay) / dl;
+    for (const b of roadSegs) {
+      if (b === a) continue;
+      const ip = segInt([a.ax, a.ay], [a.bx, a.by], [b.ax, b.ay], [b.bx, b.by]);
+      if (!ip) continue;
+      if (hash2(Math.round(ip[0]), Math.round(ip[1])) % 100 > 65) continue;  // abre ~65%
+      const half = Math.min(b.w, a.w * 0.5) / 2 + 3; // abertura do tamanho da via que cruza
+      ctx.strokeStyle = STREET; ctx.lineWidth = mw; ctx.lineCap = "butt";
+      line(ctx, ip[0] - ox - dx * half, ip[1] - oy - dy * half, ip[0] - ox + dx * half, ip[1] - oy + dy * half);
+    }
   }
-}
-function patchBand(ctx, ip, seg, length, width, ox, oy) {
-  const dl = Math.hypot(seg.bx - seg.ax, seg.by - seg.ay) || 1;
-  const dx = (seg.bx - seg.ax) / dl, dy = (seg.by - seg.ay) / dl, half = length / 2;
-  ctx.strokeStyle = STREET; ctx.lineWidth = width; ctx.lineCap = "butt";
-  line(ctx, ip[0] - ox - dx * half, ip[1] - oy - dy * half, ip[0] - ox + dx * half, ip[1] - oy + dy * half);
 }
 
 const loc = (s, ox, oy) => s.pts.map((p) => [p[0] - ox, p[1] - oy]);
@@ -415,22 +430,30 @@ function medianTrees(ctx, lp) {
     }
   }
 }
+// Construção = parcela achatada e irregular (polígono), bem compactada -> quadras
 function drawBuilding(ctx, x, y, ang, w, h, color, rng) {
   ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
-  ctx.fillStyle = color; ctx.fillRect(-w / 2, -h / 2, w, h);
-  // telhado de duas águas: uma metade mais escura + cumeeira -> volume
-  const ridgeAlongX = w >= h;
-  ctx.fillStyle = "rgba(0,0,0,0.13)";
-  if (ridgeAlongX) ctx.fillRect(-w / 2, 0, w, h / 2); else ctx.fillRect(0, -h / 2, w / 2, h);
-  ctx.strokeStyle = "rgba(40,28,15,0.6)"; ctx.lineWidth = 0.7; ctx.beginPath();
-  if (ridgeAlongX) { ctx.moveTo(-w / 2, 0); ctx.lineTo(w / 2, 0); } else { ctx.moveTo(0, -h / 2); ctx.lineTo(0, h / 2); }
-  ctx.stroke();
-  ctx.lineWidth = 1; ctx.strokeRect(-w / 2, -h / 2, w, h);   // contorno nítido
+  const j = Math.min(w, h) * 0.28, jt = () => (rng() - 0.5) * j;
+  ctx.beginPath();
+  ctx.moveTo(-w / 2 + jt(), -h / 2 + jt());
+  ctx.lineTo(w / 2 + jt(), -h / 2 + jt());
+  ctx.lineTo(w / 2 + jt(), h / 2 + jt());
+  ctx.lineTo(-w / 2 + jt(), h / 2 + jt());
+  ctx.closePath();
+  ctx.fillStyle = color; ctx.fill();
+  ctx.strokeStyle = BUILD_INK; ctx.lineWidth = 1; ctx.lineJoin = "round"; ctx.stroke();
   ctx.restore();
 }
 function drawTree(ctx, x, y, rng) {
   ctx.fillStyle = rng() < 0.5 ? TREE_GREEN : PARK_GREEN;
   ctx.beginPath(); ctx.arc(x, y, 3 + rng() * 2, 0, Math.PI * 2); ctx.fill();
+}
+function drawHatch(ctx, x, y, rng) {            // talhão de plantação (hachura)
+  ctx.strokeStyle = "rgba(110,138,74,0.5)"; ctx.lineWidth = 0.8;
+  const a = rng() < 0.5 ? 0.7 : -0.7, len = 5;
+  for (let k = -1; k <= 1; k++) {
+    ctx.beginPath(); ctx.moveTo(x + k * 3, y - len); ctx.lineTo(x + k * 3 + a * len, y + len); ctx.stroke();
+  }
 }
 function drawEstate(ctx, x, y, ang, rng) {     // propriedade grande isolada (latifúndio)
   const w = 14 + rng() * 12, h = 11 + rng() * 8;
