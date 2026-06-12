@@ -110,6 +110,8 @@ const noiseCanvas = (() => {
 /* ===================== Modelo: traços ================================= */
 // stroke: { type:'road'|'river', width, pts:[[wx,wy]...], bbox }
 let strokes = [];
+let alleys = [];                 // vielas geradas dentro de quadras grandes
+const ALLEY_W = 8;
 const activeCells = new Set();
 const spriteCache = new Map();
 
@@ -187,12 +189,59 @@ function activateCellsFor(s) {
 }
 function refreshWorld() {
   computeEnclosed();
+  generateAlleys();
   spriteCache.clear(); activeCells.clear();
   for (const s of strokes) activateCellsFor(s);
+  for (const s of alleys) activateCellsFor(s);
   if (enc) for (let gy = 0; gy < enc.h; gy++) for (let gx = 0; gx < enc.w; gx++) {
     if (enc.data[gy * enc.w + gx] !== 2) continue;
     const wx = enc.x0 + (gx + 0.5) * enc.G, wy = enc.y0 + (gy + 0.5) * enc.G;
     activeCells.add(Math.floor(wx / TILE) + "," + Math.floor(wy / TILE));
+  }
+}
+// Subdivide quadras grandes com "vielas" para dar acesso ao miolo.
+function generateAlleys() {
+  alleys = [];
+  if (!enc) return;
+  const { x0, y0, G, w, h, data } = enc;
+  const seen = new Uint8Array(w * h);
+  const spacing = Math.max(3, Math.round(110 / G)), ext = G * 1.6;
+  const isIn = (gx, gy) => gx >= 0 && gy >= 0 && gx < w && gy < h && data[gy * w + gx] === 2;
+  const addSpan = (fixedWorld, a, b, vertical) => {
+    const p1 = vertical ? [fixedWorld, a - ext] : [a - ext, fixedWorld];
+    const p2 = vertical ? [fixedWorld, b + ext] : [b + ext, fixedWorld];
+    const s = { type: "road", width: ALLEY_W, pts: [p1, p2] }; s.bbox = strokeBBox(s); alleys.push(s);
+  };
+  const carve = (fixed, lo, hi, vertical) => {
+    const fixedWorld = (vertical ? x0 : y0) + (fixed + 0.5) * G;
+    let start = null;
+    for (let v = lo; v <= hi + 1; v++) {
+      const inside = v <= hi && (vertical ? isIn(fixed, v) : isIn(v, fixed));
+      if (inside) { if (start === null) start = v; }
+      else if (start !== null) {
+        if (v - 1 - start >= 2) {
+          const aW = (vertical ? y0 : x0) + (start + 0.5) * G, bW = (vertical ? y0 : x0) + (v - 0.5) * G;
+          addSpan(fixedWorld, aW, bW, vertical);
+        }
+        start = null;
+      }
+    }
+  };
+  for (let i = 0; i < data.length; i++) {
+    if (data[i] !== 2 || seen[i]) continue;
+    const comp = [i]; seen[i] = 1;
+    let minx = i % w, maxx = minx, miny = (i / w) | 0, maxy = miny, cnt = 0;
+    for (let qi = 0; qi < comp.length; qi++) {
+      const j = comp[qi], x = j % w, y = (j / w) | 0; cnt++;
+      if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y;
+      if (x > 0 && data[j - 1] === 2 && !seen[j - 1]) { seen[j - 1] = 1; comp.push(j - 1); }
+      if (x < w - 1 && data[j + 1] === 2 && !seen[j + 1]) { seen[j + 1] = 1; comp.push(j + 1); }
+      if (y > 0 && data[j - w] === 2 && !seen[j - w]) { seen[j - w] = 1; comp.push(j - w); }
+      if (y < h - 1 && data[j + w] === 2 && !seen[j + w]) { seen[j + w] = 1; comp.push(j + w); }
+    }
+    if (Math.sqrt(cnt * G * G) < 220) continue;        // quadra pequena: dispensa viela
+    for (let gx = minx + spacing; gx < maxx; gx += spacing) carve(gx, miny, maxy, true);
+    for (let gy = miny + spacing; gy < maxy; gy += spacing) carve(gy, minx, maxx, false);
   }
 }
 
@@ -216,8 +265,8 @@ function generateCellSprite(cx, cy) {
 
   const ex0 = ox - M, ey0 = oy - M, ex1 = ox + TILE + M, ey1 = oy + TILE + M;
   const roadSegs = [], riverSegs = [], nearRoads = [], nearRivers = [];
-  for (const s of strokes) {
-    if (!bboxIntersect(s.bbox, ex0, ey0, ex1, ey1)) continue;
+  const collect = (s) => {
+    if (!bboxIntersect(s.bbox, ex0, ey0, ex1, ey1)) return;
     (s.type === "river" ? nearRivers : nearRoads).push(s);
     const dst = s.type === "river" ? riverSegs : roadSegs;
     for (let i = 1; i < s.pts.length; i++) {
@@ -225,7 +274,9 @@ function generateCellSprite(cx, cy) {
       if (Math.max(ax, bx) < ex0 || Math.min(ax, bx) > ex1 || Math.max(ay, by) < ey0 || Math.min(ay, by) > ey1) continue;
       dst.push({ ax, ay, bx, by, w: s.width });
     }
-  }
+  };
+  for (const s of strokes) collect(s);
+  for (const s of alleys) collect(s);          // vielas geradas dentro das quadras
   const wallSegs = roadSegs.concat(riverSegs);
 
   // rios em camadas (contornos -> águas -> brilho): cruzamentos se fundem
@@ -233,11 +284,12 @@ function generateCellSprite(cx, cy) {
   for (const s of nearRivers) riverPass(ctx, s, ox, oy, 1);
   for (const s of nearRivers) riverPass(ctx, s, ox, oy, 2);
 
-  // construções: faixa ao longo das vias + interior de áreas fechadas
-  const step = 9;
+  // construções: faixa ao longo das vias + interior de áreas fechadas.
+  // Lattice mais espaçado -> lotes distintos (menos quadradinhos sobrepostos).
+  const step = 13;
   for (let gx = step / 2; gx < TILE; gx += step) {
     for (let gy = step / 2; gy < TILE; gy += step) {
-      const lx = gx + (rng() - 0.5) * 5, ly = gy + (rng() - 0.5) * 5;
+      const lx = gx + (rng() - 0.5) * 3, ly = gy + (rng() - 0.5) * 3;
       const wx = ox + lx, wy = oy + ly;
 
       let onWater = false;
@@ -261,8 +313,8 @@ function generateCellSprite(cx, cy) {
       const ang = wn.seg ? Math.atan2(wn.seg.by - wn.seg.ay, wn.seg.bx - wn.seg.ax) : rng() * Math.PI;
 
       if (rng() < access) {                                    // construção
-        const sc = 0.85 + access * 0.6;
-        drawBuilding(ctx, lx, ly, ang, (5 + rng() * 6) * sc, (5 + rng() * 5) * sc, ROOF_COLORS[(rng() * ROOF_COLORS.length) | 0]);
+        const sc = 0.95 + access * 0.25;
+        drawBuilding(ctx, lx, ly, ang, (7 + rng() * 4) * sc, (6 + rng() * 3) * sc, ROOF_COLORS[(rng() * ROOF_COLORS.length) | 0], rng);
       } else if (enclosed && access < 0.3) {                   // fundo de quadrão: campo
         const v = rng();
         if (v < 0.05) drawEstate(ctx, lx, ly, ang, rng);       // latifúndio / propriedade grande
@@ -279,8 +331,26 @@ function generateCellSprite(cx, cy) {
   for (const s of nearRoads) roadPass(ctx, s, ox, oy, 1);
   drawBridges(ctx, roadSegs, riverSegs, ox, oy);
   for (const s of nearRoads) roadPass(ctx, s, ox, oy, 2);
+  junctionPatches(ctx, roadSegs, ox, oy);          // cruzamentos cortam canteiros/faixas
 
   return cv;
+}
+// nos cruzamentos, repinta asfalto para "cortar" canteiro central e faixas
+function junctionPatches(ctx, roadSegs, ox, oy) {
+  for (let i = 0; i < roadSegs.length; i++) for (let j = i + 1; j < roadSegs.length; j++) {
+    const a = roadSegs[i], b = roadSegs[j];
+    if (Math.max(a.w, b.w) < 28) continue;          // só onde há canteiro/faixa a cortar
+    const ip = segInt([a.ax, a.ay], [a.bx, a.by], [b.ax, b.ay], [b.bx, b.by]);
+    if (!ip) continue;
+    patchBand(ctx, ip, a, b.w + 6, a.w, ox, oy);
+    patchBand(ctx, ip, b, a.w + 6, b.w, ox, oy);
+  }
+}
+function patchBand(ctx, ip, seg, length, width, ox, oy) {
+  const dl = Math.hypot(seg.bx - seg.ax, seg.by - seg.ay) || 1;
+  const dx = (seg.bx - seg.ax) / dl, dy = (seg.by - seg.ay) / dl, half = length / 2;
+  ctx.strokeStyle = STREET; ctx.lineWidth = width; ctx.lineCap = "butt";
+  line(ctx, ip[0] - ox - dx * half, ip[1] - oy - dy * half, ip[0] - ox + dx * half, ip[1] - oy + dy * half);
 }
 
 const loc = (s, ox, oy) => s.pts.map((p) => [p[0] - ox, p[1] - oy]);
@@ -345,10 +415,17 @@ function medianTrees(ctx, lp) {
     }
   }
 }
-function drawBuilding(ctx, x, y, ang, w, h, color) {
+function drawBuilding(ctx, x, y, ang, w, h, color, rng) {
   ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
   ctx.fillStyle = color; ctx.fillRect(-w / 2, -h / 2, w, h);
-  ctx.strokeStyle = "rgba(40,28,15,0.55)"; ctx.lineWidth = 0.9; ctx.strokeRect(-w / 2, -h / 2, w, h);
+  // telhado de duas águas: uma metade mais escura + cumeeira -> volume
+  const ridgeAlongX = w >= h;
+  ctx.fillStyle = "rgba(0,0,0,0.13)";
+  if (ridgeAlongX) ctx.fillRect(-w / 2, 0, w, h / 2); else ctx.fillRect(0, -h / 2, w / 2, h);
+  ctx.strokeStyle = "rgba(40,28,15,0.6)"; ctx.lineWidth = 0.7; ctx.beginPath();
+  if (ridgeAlongX) { ctx.moveTo(-w / 2, 0); ctx.lineTo(w / 2, 0); } else { ctx.moveTo(0, -h / 2); ctx.lineTo(0, h / 2); }
+  ctx.stroke();
+  ctx.lineWidth = 1; ctx.strokeRect(-w / 2, -h / 2, w, h);   // contorno nítido
   ctx.restore();
 }
 function drawTree(ctx, x, y, rng) {
@@ -549,7 +626,7 @@ document.getElementById("tools").addEventListener("click", (e) => {
 sizeSlider.addEventListener("input", () => { if (tool !== "hand") toolWidth[tool] = parseInt(sizeSlider.value, 10); });
 zoomSlider.addEventListener("input", () => setZoom(parseFloat(zoomSlider.value), innerWidth / 2, innerHeight * 0.42));
 document.getElementById("gridchk").addEventListener("change", (e) => { showGrid = e.target.checked; });
-document.getElementById("clear").addEventListener("click", () => { strokes = []; enc = null; activeCells.clear(); spriteCache.clear(); current = null; });
+document.getElementById("clear").addEventListener("click", () => { strokes = []; alleys = []; enc = null; activeCells.clear(); spriteCache.clear(); current = null; });
 
 /* ===================== Início ======================================== */
 function start() {

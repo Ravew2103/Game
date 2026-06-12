@@ -31,9 +31,12 @@ o mundo é dividido em células cacheadas (só para performance). Em cada célul
 o jogo espalha construções de forma determinística e decide cada lote por:
 
 - em cima da rua/rio → vazio (pavimento/água);
-- dentro da faixa `FRONTAGE` ao longo de uma via → construção orientada à rua;
-- dentro de uma **área fechada** → construção (interior preenchido);
-- longe de tudo → papel (vazio), com árvores ocasionais.
+- a **densidade** vem da **acessibilidade**: perto de uma via é denso; o fundo de
+  uma quadra grande (longe de qualquer via) vira vegetação/campo com latifúndios
+  ocasionais. Avenidas largas adensam mais fundo (centro);
+- **quadras muito grandes** ganham **vielas** geradas automaticamente, que dão
+  acesso ao miolo e o tornam habitável;
+- longe de tudo (fora da cidade) → papel.
 
 As áreas fechadas são detectadas rasterizando as vias e fazendo *flood-fill* a
 partir de fora: o que não é via e não foi alcançado de fora é interior fechado.
