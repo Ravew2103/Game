@@ -169,36 +169,13 @@ function computeEnclosed() {
     if (y > 0) seed(x, y - 1); if (y < h - 1) seed(x, y + 1);
   }
   for (let i = 0; i < data.length; i++) if (data[i] === 0) data[i] = 2; // interior fechado
-
-  // densidade por área: cada bloco fechado (componente conexo) -> quanto menor, mais denso
-  const dens = new Uint8Array(w * h), seen = new Uint8Array(w * h);
-  for (let i = 0; i < data.length; i++) {
-    if (data[i] !== 2 || seen[i]) continue;
-    const comp = [i]; seen[i] = 1;
-    for (let qi = 0; qi < comp.length; qi++) {
-      const j = comp[qi], x = j % w, y = (j / w) | 0;
-      if (x > 0 && data[j - 1] === 2 && !seen[j - 1]) { seen[j - 1] = 1; comp.push(j - 1); }
-      if (x < w - 1 && data[j + 1] === 2 && !seen[j + 1]) { seen[j + 1] = 1; comp.push(j + 1); }
-      if (y > 0 && data[j - w] === 2 && !seen[j - w]) { seen[j - w] = 1; comp.push(j - w); }
-      if (y < h - 1 && data[j + w] === 2 && !seen[j + w]) { seen[j + w] = 1; comp.push(j + w); }
-    }
-    const L = Math.sqrt(comp.length * G * G);          // lado característico do bloco
-    const dv = (clamp(0.4, 1, 1 - (L - 120) / 380 * 0.6) * 255) | 0;
-    for (const j of comp) dens[j] = dv;
-  }
-  enc = { x0, y0, G, w, h, data, dens };
+  enc = { x0, y0, G, w, h, data };
 }
 function sampleEnclosed(wx, wy) {
   if (!enc) return false;
   const gx = Math.floor((wx - enc.x0) / enc.G), gy = Math.floor((wy - enc.y0) / enc.G);
   if (gx < 0 || gy < 0 || gx >= enc.w || gy >= enc.h) return false;
   return enc.data[gy * enc.w + gx] === 2;
-}
-function sampleDensity(wx, wy) {
-  if (!enc || !enc.dens) return 0;
-  const gx = Math.floor((wx - enc.x0) / enc.G), gy = Math.floor((wy - enc.y0) / enc.G);
-  if (gx < 0 || gy < 0 || gx >= enc.w || gy >= enc.h) return 0;
-  return enc.dens[gy * enc.w + gx] / 255;
 }
 
 /* ---- recomputa mundo (chamado quando os traços mudam) ---- */
@@ -251,8 +228,10 @@ function generateCellSprite(cx, cy) {
   }
   const wallSegs = roadSegs.concat(riverSegs);
 
-  // rio por baixo
-  for (const s of nearRivers) drawStrokeLocal(ctx, s, ox, oy);
+  // rios em camadas (contornos -> águas -> brilho): cruzamentos se fundem
+  for (const s of nearRivers) riverPass(ctx, s, ox, oy, 0);
+  for (const s of nearRivers) riverPass(ctx, s, ox, oy, 1);
+  for (const s of nearRivers) riverPass(ctx, s, ox, oy, 2);
 
   // construções: faixa ao longo das vias + interior de áreas fechadas
   const step = 9;
@@ -272,46 +251,57 @@ function generateCellSprite(cx, cy) {
       const enclosed = sampleEnclosed(wx, wy);
       if (!nearRoad && !enclosed) continue;
 
-      // densidade inferida: bloco menor / avenida larga -> mais denso
-      let density = 0.55;
-      if (enclosed) density = Math.max(density, sampleDensity(wx, wy));
-      if (nearRoad) density = Math.max(density, clamp(0.55, 1, 0.5 + r.seg.w / 90));
-      if (rng() > density) { if (rng() < 0.45) drawTree(ctx, lx, ly, rng); continue; } // vãos / jardins
+      // densidade = ACESSIBILIDADE: perto da via é denso; fundo de quadra é
+      // "inalcançável" -> vegetação/campo. Avenidas largas alcançam mais fundo.
+      const depth = r.seg ? Math.max(0, r.d - r.seg.w / 2) : 1e9;
+      const reach = 70 + (r.seg ? r.seg.w : 0);
+      const access = clamp(0, 1, 1 - (depth - FRONTAGE) / reach);
 
-      let ang = rng() * Math.PI;                                // orienta à via mais próxima
-      if (nearRoad) ang = Math.atan2(r.seg.by - r.seg.ay, r.seg.bx - r.seg.ax);
-      else { const wn = nearest(wx, wy, wallSegs); if (wn.seg) ang = Math.atan2(wn.seg.by - wn.seg.ay, wn.seg.bx - wn.seg.ax); }
-      const sc = 0.8 + density * 0.7;                           // mais denso -> lotes maiores
-      drawBuilding(ctx, lx, ly, ang, (5 + rng() * 6) * sc, (5 + rng() * 5) * sc, ROOF_COLORS[(rng() * ROOF_COLORS.length) | 0]);
+      const wn = nearest(wx, wy, wallSegs);
+      const ang = wn.seg ? Math.atan2(wn.seg.by - wn.seg.ay, wn.seg.bx - wn.seg.ax) : rng() * Math.PI;
+
+      if (rng() < access) {                                    // construção
+        const sc = 0.85 + access * 0.6;
+        drawBuilding(ctx, lx, ly, ang, (5 + rng() * 6) * sc, (5 + rng() * 5) * sc, ROOF_COLORS[(rng() * ROOF_COLORS.length) | 0]);
+      } else if (enclosed && access < 0.3) {                   // fundo de quadrão: campo
+        const v = rng();
+        if (v < 0.05) drawEstate(ctx, lx, ly, ang, rng);       // latifúndio / propriedade grande
+        else if (v < 0.55) drawTree(ctx, lx, ly, rng);         // mata / pasto
+        // senão: campo aberto (papel)
+      } else if (rng() < 0.35) {
+        drawTree(ctx, lx, ly, rng);                            // jardins / vãos
+      }
     }
   }
 
-  // ruas / avenidas por cima e pontes
-  for (const s of nearRoads) drawStrokeLocal(ctx, s, ox, oy);
+  // ruas em camadas (contornos -> asfalto -> pontes -> faixas): cruzamentos se fundem
+  for (const s of nearRoads) roadPass(ctx, s, ox, oy, 0);
+  for (const s of nearRoads) roadPass(ctx, s, ox, oy, 1);
   drawBridges(ctx, roadSegs, riverSegs, ox, oy);
+  for (const s of nearRoads) roadPass(ctx, s, ox, oy, 2);
 
   return cv;
 }
 
-function drawStrokeLocal(ctx, s, ox, oy) {
-  const lp = s.pts.map((p) => [p[0] - ox, p[1] - oy]);
-  if (lp.length < 2) return;
-  if (s.type === "river") {
-    strokePoly(ctx, lp, s.width + 3, WATER_INK);
-    strokePoly(ctx, lp, s.width, WATER);
-    strokePoly(ctx, lp, Math.max(3, s.width * 0.18), WATER_HI);
-    return;
-  }
-  // Rua: a largura define a classe da via
-  strokePoly(ctx, lp, s.width + 3, INK);
-  strokePoly(ctx, lp, s.width, STREET);
-  if (s.width >= 44) {                       // avenida com canteiro central
+const loc = (s, ox, oy) => s.pts.map((p) => [p[0] - ox, p[1] - oy]);
+function riverPass(ctx, s, ox, oy, pass) {
+  const lp = loc(s, ox, oy); if (lp.length < 2) return;
+  if (pass === 0) strokePoly(ctx, lp, s.width + 3, WATER_INK);
+  else if (pass === 1) strokePoly(ctx, lp, s.width, WATER);
+  else strokePoly(ctx, lp, Math.max(3, s.width * 0.18), WATER_HI);
+}
+function roadPass(ctx, s, ox, oy, pass) {
+  const lp = loc(s, ox, oy); if (lp.length < 2) return;
+  if (pass === 0) { strokePoly(ctx, lp, s.width + 3, INK); return; }      // contorno
+  if (pass === 1) { strokePoly(ctx, lp, s.width, STREET); return; }       // asfalto
+  // faixas / canteiro (a largura define a classe)
+  if (s.width >= 44) {
     strokePoly(ctx, lp, Math.max(6, s.width * 0.26), PARK_GREEN);
     medianTrees(ctx, lp);
     strokePoly(ctx, lp, 0.8, "rgba(60,80,50,0.4)");
-  } else if (s.width >= 28) {                // avenida: faixa central sólida
+  } else if (s.width >= 28) {
     strokePoly(ctx, lp, 2, LANE);
-  } else if (s.width >= 16) {                // rua larga: faixa central tracejada
+  } else if (s.width >= 16) {
     ctx.save(); ctx.setLineDash([6, 7]); strokePoly(ctx, lp, 1.6, LANE); ctx.restore();
   }
 }
@@ -364,6 +354,14 @@ function drawBuilding(ctx, x, y, ang, w, h, color) {
 function drawTree(ctx, x, y, rng) {
   ctx.fillStyle = rng() < 0.5 ? TREE_GREEN : PARK_GREEN;
   ctx.beginPath(); ctx.arc(x, y, 3 + rng() * 2, 0, Math.PI * 2); ctx.fill();
+}
+function drawEstate(ctx, x, y, ang, rng) {     // propriedade grande isolada (latifúndio)
+  const w = 14 + rng() * 12, h = 11 + rng() * 8;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang + (rng() - 0.5) * 0.3);
+  ctx.fillStyle = ROOF_COLORS[(rng() * ROOF_COLORS.length) | 0];
+  ctx.fillRect(-w / 2, -h / 2, w, h);
+  ctx.strokeStyle = "rgba(40,28,15,0.5)"; ctx.lineWidth = 1; ctx.strokeRect(-w / 2, -h / 2, w, h);
+  ctx.restore();
 }
 function getSprite(cx, cy) {
   const k = cx + "," + cy;
