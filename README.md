@@ -7,13 +7,15 @@ estética de mapa desenhado à mão.
 
 ## Pincéis
 
-- **Rua** / **Avenida** — traço preto (a avenida é mais larga, com faixa central).
-  O jogo faz construções nascerem ao longo da via.
-- **Rio** — água azul-clara que serpenteia (quarteirões não invadem a água).
-- **Quadra** — desenhe o **perímetro** de um quarteirão e o jogo preenche o
-  interior com construções (orientadas pelas bordas da quadra).
+- **Rua** — a **espessura** define a classe da via: fina = rua simples; média =
+  faixa central tracejada; larga = avenida com faixa central; muito larga =
+  avenida com **canteiro central** arborizado. Casas nascem ao longo da via.
+- **Rio** — água azul-clara que serpenteia (a espessura é a largura do rio).
 - **Borracha** — apaga traços tocados.
-- **Espessura** — slider que define a grossura do pincel atual.
+
+Não há pincel de quarteirão: toda **área fechada** por ruas/avenidas/rios tem o
+interior populado automaticamente. E onde uma **rua cruza um rio** nasce uma
+**ponte**.
 
 ## Controles
 
@@ -26,13 +28,15 @@ estética de mapa desenhado à mão.
 
 Tudo é guardado como traços vetoriais em coordenadas de mundo. Para desenhar,
 o mundo é dividido em células cacheadas (só para performance). Em cada célula,
-o jogo espalha construções de forma determinística e decide cada lote pela
-distância às vias mais próximas:
+o jogo espalha construções de forma determinística e decide cada lote por:
 
 - em cima da rua/rio → vazio (pavimento/água);
-- dentro da faixa `FRONTAGE` ao longo de uma via, ou dentro de uma **quadra** →
-  construção, **orientada** pela direção da via (casas voltadas à rua);
+- dentro da faixa `FRONTAGE` ao longo de uma via → construção orientada à rua;
+- dentro de uma **área fechada** → construção (interior preenchido);
 - longe de tudo → papel (vazio), com árvores ocasionais.
+
+As áreas fechadas são detectadas rasterizando as vias e fazendo *flood-fill* a
+partir de fora: o que não é via e não foi alcançado de fora é interior fechado.
 
 ## Estrutura
 

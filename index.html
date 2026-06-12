@@ -15,14 +15,12 @@
     <div class="row tools" id="tools">
       <button type="button" data-tool="hand" title="Mover o mapa">✋ Mover</button>
       <button type="button" data-tool="road" class="active">Rua</button>
-      <button type="button" data-tool="avenue">Avenida</button>
       <button type="button" data-tool="river">Rio</button>
-      <button type="button" data-tool="block">Quadra</button>
       <button type="button" data-tool="erase">Borracha</button>
     </div>
 
     <div class="row">
-      <label class="slider"><span class="label">Espessura do pincel</span>
+      <label class="slider"><span class="label">Espessura — define a classe da via</span>
         <input id="size" type="range" min="6" max="64" step="1" value="14" /></label>
     </div>
 
@@ -37,11 +35,11 @@
     <details class="help">
       <summary>Como funciona</summary>
       <ul>
-        <li>Escolha um <b>pincel</b> e <b>desenhe</b> (1 dedo / clique-arrasta)</li>
-        <li><b>Rua/Avenida</b>: o jogo faz casas surgirem ao longo, alinhadas à via</li>
-        <li><b>Rio</b>: água que serpenteia</li>
-        <li><b>Quadra</b>: desenhe o <b>perímetro</b> e o miolo é preenchido de construções</li>
-        <li><b>2 dedos</b> (ou ✋ Mover / Espaço) movem e dão zoom no mapa</li>
+        <li>Desenhe <b>ruas</b> e <b>rios</b> (1 dedo / clique-arrasta)</li>
+        <li>A <b>espessura</b> da rua define a via: simples → faixa central → avenida → com canteiro</li>
+        <li>Casas surgem ao longo das vias; toda <b>área fechada</b> tem o miolo preenchido</li>
+        <li>Rua cruzando rio vira <b>ponte</b> automaticamente</li>
+        <li><b>2 dedos</b> (ou ✋ Mover / Espaço) movem e dão zoom</li>
       </ul>
     </details>
   </aside>
