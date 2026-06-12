@@ -12,27 +12,35 @@
   <aside id="hud">
     <div class="brand">Cidade Infinita</div>
 
-    <div class="row stats">
-      <div><span class="label">Peças</span><strong id="placed">0</strong></div>
+    <div class="row tools" id="tools">
+      <button data-tool="hand" title="Mover o mapa">✋ Mover</button>
+      <button data-tool="road" class="active">Rua</button>
+      <button data-tool="avenue">Avenida</button>
+      <button data-tool="river">Rio</button>
+      <button data-tool="block">Quadra</button>
+      <button data-tool="erase">Borracha</button>
+    </div>
+
+    <div class="row">
+      <label class="slider"><span class="label">Espessura do pincel</span>
+        <input id="size" type="range" min="6" max="64" step="1" value="14" /></label>
     </div>
 
     <div class="row controls">
-      <label class="zoom">
-        <span class="label">Zoom</span>
-        <input id="zoom" type="range" min="0.6" max="6" step="0.05" value="2.2" />
-      </label>
+      <label class="slider zoom"><span class="label">Zoom</span>
+        <input id="zoom" type="range" min="0.6" max="6" step="0.05" value="2.2" /></label>
       <label class="toggle"><input id="gridchk" type="checkbox" checked /> Grade</label>
     </div>
 
-    <div class="row"><button id="newcity">✦ Nova cidade</button></div>
+    <div class="row"><button id="clear" class="ghost">Limpar tudo</button></div>
 
     <details class="help">
-      <summary>Como jogar</summary>
+      <summary>Como funciona</summary>
       <ul>
-        <li><b>Toque</b> numa célula destacada e o jogo gera aquele pedaço da cidade</li>
-        <li>O traçado continua <b>contínuo</b> entre as peças — ruas e rio fluem</li>
-        <li>As células em volta aparecem como <b>esboço</b>: é só tocar para construir</li>
-        <li><b>Arraste</b> para mover, <b>pinça</b>/slider para o zoom</li>
+        <li>Escolha um <b>pincel</b> e <b>desenhe</b> (1 dedo / clique-arrasta)</li>
+        <li><b>Rua/Avenida</b>: o jogo faz casas surgirem ao longo, alinhadas à via</li>
+        <li><b>Rio</b>: água que serpenteia; <b>Quadra</b>: área cheia de construções</li>
+        <li><b>2 dedos</b> (ou ✋ Mover / Espaço) movem e dão zoom no mapa</li>
       </ul>
     </details>
   </aside>
