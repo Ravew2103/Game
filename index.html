@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forja &amp; Fama — Protótipo</title>
+<style>
+  :root {
+    --bg: #1c1410;
+    --panel: #2a1f18;
+    --panel2: #35281e;
+    --border: #58412e;
+    --text: #e8d9c3;
+    --muted: #a08a6e;
+    --gold: #f0b429;
+    --ember: #e2622b;
+    --green: #7bb661;
+    --red: #d9534f;
+    --blue: #6ba4c8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 16px;
+  }
+  h1 { font-size: 1.5rem; color: var(--gold); letter-spacing: 1px; }
+  h2 { font-size: 1.1rem; color: var(--ember); margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  .container { max-width: 1000px; margin: 0 auto; }
+
+  /* ---------- Cabeçalho / status ---------- */
+  header {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .stats { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-size: 0.95rem; }
+  .stat b { color: var(--gold); }
+  .stat .label { color: var(--muted); font-size: 0.8rem; display: block; }
+  .bar-wrap { width: 120px; height: 12px; background: #14100c; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--green); transition: width 0.3s; }
+  .bar-fill.xp { background: var(--blue); }
+  button {
+    font-family: inherit;
+    background: var(--panel2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  button:hover:not(:disabled) { background: #46351f; border-color: var(--gold); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.primary { background: #5a3416; border-color: var(--ember); }
+  button.primary:hover:not(:disabled) { background: #74431c; }
+
+  /* ---------- Abas ---------- */
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .tabs button { padding: 10px 20px; font-size: 1rem; }
+  .tabs button.active { background: #5a3416; border-color: var(--gold); color: var(--gold); }
+
+  /* ---------- Layout principal ---------- */
+  .main { display: grid; grid-template-columns: 1fr 300px; gap: 12px; }
+  @media (max-width: 800px) { .main { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ---------- Cards ---------- */
+  .card {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .card .info { flex: 1; min-width: 180px; }
+  .card .title { font-weight: bold; }
+  .card .desc { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+  .card.locked { opacity: 0.5; }
+  .price { color: var(--gold); font-weight: bold; white-space: nowrap; }
+  .quality-Comum { color: var(--text); }
+  .quality-Boa { color: var(--green); }
+  .quality-Excelente { color: var(--blue); }
+  .quality-ObraPrima { color: var(--gold); }
+
+  /* ---------- Inventário ---------- */
+  .inv-grid { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 0.9rem; }
+  .inv-grid .qty { color: var(--gold); text-align: right; }
+
+  /* ---------- Log ---------- */
+  #log {
+    margin-top: 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    height: 140px;
+    overflow-y: auto;
+    font-size: 0.85rem;
+  }
+  #log p { margin-bottom: 4px; color: var(--muted); }
+  #log p:first-child { color: var(--text); }
+  #log .good { color: var(--green); }
+  #log .bad { color: var(--red); }
+  #log .gold-msg { color: var(--gold); }
+
+  /* ---------- Minigame da forja ---------- */
+  #forge-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  #forge-overlay.open { display: flex; }
+  #forge-modal {
+    background: var(--panel);
+    border: 2px solid var(--ember);
+    border-radius: 10px;
+    padding: 24px;
+    width: min(480px, 92vw);
+    text-align: center;
+  }
+  #forge-modal h2 { border: none; }
+  #strike-bar {
+    position: relative;
+    height: 36px;
+    background: #14100c;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin: 18px 0;
+    overflow: hidden;
+  }
+  #strike-zone {
+    position: absolute;
+    top: 0; bottom: 0;
+    background: rgba(123, 182, 97, 0.35);
+    border-left: 1px solid var(--green);
+    border-right: 1px solid var(--green);
+  }
+  #strike-center {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: var(--gold);
+  }
+  #strike-pointer {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 4px;
+    background: var(--ember);
+    box-shadow: 0 0 8px var(--ember);
+  }
+  .strike-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; }
+  .strike-dots span {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #14100c; border: 1px solid var(--border);
+    display: inline-block;
+  }
+  .strike-dots span.hit-great { background: var(--gold); }
+  .strike-dots span.hit-good { background: var(--green); }
+  .strike-dots span.hit-poor { background: var(--red); }
+  #forge-result { min-height: 24px; margin-bottom: 12px; font-size: 1.05rem; }
+
+  .hint { color: var(--muted); font-size: 0.8rem; margin-top: 8px; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <h1>⚒️ Forja &amp; Fama</h1>
+      <div class="stat"><span class="label">Dia <b id="ui-day">1</b> — <span id="ui-title">Aprendiz de Ferreiro</span></span></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="label">Ouro</span><b id="ui-gold">0</b> 🪙</div>
+      <div class="stat"><span class="label">Renome</span><b id="ui-renown">0</b> ⭐</div>
+      <div class="stat">
+        <span class="label">Técnica — nível <b id="ui-tech">1</b></span>
+        <div class="bar-wrap"><div class="bar-fill xp" id="ui-xp-bar" style="width:0%"></div></div>
+      </div>
+      <div class="stat">
+        <span class="label">Energia <b id="ui-stamina">100</b>/100</span>
+        <div class="bar-wrap"><div class="bar-fill" id="ui-stamina-bar" style="width:100%"></div></div>
+      </div>
+      <button class="primary" id="btn-sleep">🌙 Dormir (novo dia)</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button data-tab="gather" class="active">⛏️ Coleta</button>
+    <button data-tab="forge">🔥 Forja</button>
+    <button data-tab="sell">💰 Comércio</button>
+  </div>
+
+  <div class="main">
+    <div class="panel">
+      <div id="tab-gather" class="tab-content active">
+        <h2>Coletar matéria-prima</h2>
+        <p class="hint" style="margin-bottom:10px">Cada expedição gasta energia. Locais melhores são liberados com renome.</p>
+        <div id="gather-list"></div>
+      </div>
+
+      <div id="tab-forge" class="tab-content">
+        <h2>Bancada da forja</h2>
+        <p class="hint" style="margin-bottom:10px">Forjar gasta materiais e energia. Acerte o martelo no ponto certo para melhorar a qualidade!</p>
+        <div id="recipe-list"></div>
+      </div>
+
+      <div id="tab-sell" class="tab-content">
+        <h2>Encomendas</h2>
+        <p class="hint" style="margin-bottom:10px">Encomendas pagam mais e dão renome extra. Novas encomendas chegam a cada dia.</p>
+        <div id="order-list"></div>
+        <h2 style="margin-top:16px">Vender no mercado</h2>
+        <div id="sell-list"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>🎒 Materiais</h2>
+      <div class="inv-grid" id="inv-materials"></div>
+      <h2 style="margin-top:16px">🗡️ Mercadorias</h2>
+      <div class="inv-grid" id="inv-items"></div>
+      <div class="toolbar" style="margin-top:16px">
+        <button id="btn-reset">↺ Recomeçar jogo</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="log"></div>
+</div>
+
+<!-- Minigame da forja -->
+<div id="forge-overlay">
+  <div id="forge-modal">
+    <h2 id="forge-item-name">Forjando...</h2>
+    <p class="hint">Acerte o martelo quando o marcador estiver na zona verde. A linha dourada é o ponto perfeito.</p>
+    <div class="strike-dots" id="strike-dots"><span></span><span></span><span></span></div>
+    <div id="strike-bar">
+      <div id="strike-zone"></div>
+      <div id="strike-center"></div>
+      <div id="strike-pointer"></div>
+    </div>
+    <div id="forge-result"></div>
+    <button class="primary" id="btn-strike" style="font-size:1.1rem; padding:12px 30px">🔨 Bater o martelo! (espaço)</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* =====================================================
+   Dados do jogo
+===================================================== */
+const MATERIALS = {
+  madeira: { name: "Madeira",  icon: "🪵" },
+  ferro:   { name: "Ferro",    icon: "⛓️" },
+  couro:   { name: "Couro",    icon: "🟤" },
+  carvao:  { name: "Carvão",   icon: "⚫" },
+  aco:     { name: "Aço",      icon: "🔩" },
+  prata:   { name: "Prata",    icon: "🪙" },
+};
+
+const GATHER_SPOTS = [
+  { id: "floresta", name: "Floresta", icon: "🌲", desc: "Madeira em abundância.",
+    cost: 15, renown: 0, yields: [ { mat: "madeira", min: 2, max: 4 } ] },
+  { id: "mina", name: "Mina Rasa", icon: "⛏️", desc: "Veios de ferro e um pouco de carvão.",
+    cost: 20, renown: 0, yields: [ { mat: "ferro", min: 1, max: 3 }, { mat: "carvao", min: 0, max: 2 } ] },
+  { id: "cacada", name: "Caçada", icon: "🏹", desc: "Couro de animais selvagens.",
+    cost: 20, renown: 5, yields: [ { mat: "couro", min: 1, max: 3 } ] },
+  { id: "minaProfunda", name: "Mina Profunda", icon: "🕳️", desc: "Carvão farto e veios de prata.",
+    cost: 30, renown: 40, yields: [ { mat: "carvao", min: 2, max: 3 }, { mat: "ferro", min: 1, max: 2 }, { mat: "prata", min: 0, max: 2 } ] },
+];
+
+// tier controla dificuldade do minigame e renome ganho ao vender
+const RECIPES = [
+  { id: "adaga",    name: "Adaga de Ferro",     icon: "🗡️", tech: 1, tier: 1, price: 25,  xp: 8,
+    mats: { ferro: 1, madeira: 1 } },
+  { id: "escudo",   name: "Escudo de Madeira",  icon: "🛡️", tech: 1, tier: 1, price: 30,  xp: 9,
+    mats: { madeira: 3, couro: 1 } },
+  { id: "espada",   name: "Espada de Ferro",    icon: "⚔️", tech: 2, tier: 2, price: 55,  xp: 14,
+    mats: { ferro: 2, madeira: 1, couro: 1 } },
+  { id: "elmo",     name: "Elmo de Ferro",      icon: "🪖", tech: 2, tier: 2, price: 50,  xp: 13,
+    mats: { ferro: 2, couro: 1 } },
+  { id: "machado",  name: "Machado de Batalha", icon: "🪓", tech: 3, tier: 3, price: 80,  xp: 18,
+    mats: { ferro: 3, madeira: 2 } },
+  { id: "armCouro", name: "Armadura de Couro",  icon: "🥋", tech: 3, tier: 3, price: 85,  xp: 18,
+    mats: { couro: 4, ferro: 1 } },
+  { id: "refinar",  name: "Refinar Aço",        icon: "🔥", tech: 4, tier: 3, price: 0,   xp: 10,
+    mats: { ferro: 2, carvao: 2 }, produces: { mat: "aco", qty: 1 },
+    desc: "Transforma ferro e carvão em 1 barra de aço." },
+  { id: "espAco",   name: "Espada de Aço",      icon: "🗡️", tech: 5, tier: 4, price: 160, xp: 26,
+    mats: { aco: 2, madeira: 1, couro: 1 } },
+  { id: "armPlacas",name: "Armadura de Placas", icon: "🛡️", tech: 6, tier: 4, price: 260, xp: 32,
+    mats: { aco: 4, couro: 2 } },
+  { id: "lamPrata", name: "Lâmina de Prata",    icon: "✨", tech: 7, tier: 5, price: 420, xp: 40,
+    mats: { aco: 2, prata: 2 } },
+  { id: "dragao",   name: "Lâmina do Dragão",   icon: "🐉", tech: 9, tier: 6, price: 900, xp: 60,
+    mats: { aco: 3, prata: 3, carvao: 2 } },
+];
+
+const QUALITIES = [
+  { id: "Comum",     name: "Comum",      mult: 1.0, renown: 1 },
+  { id: "Boa",       name: "Boa",        mult: 1.3, renown: 2 },
+  { id: "Excelente", name: "Excelente",  mult: 1.7, renown: 4 },
+  { id: "ObraPrima", name: "Obra-Prima", mult: 2.5, renown: 8 },
+];
+
+const TITLES = [
+  { renown: 0,   name: "Aprendiz de Ferreiro" },
+  { renown: 15,  name: "Ferreiro Novato" },
+  { renown: 40,  name: "Artesão do Ferro" },
+  { renown: 100, name: "Ferreiro Respeitado" },
+  { renown: 220, name: "Mestre Ferreiro" },
+  { renown: 450, name: "Ferreiro Lendário" },
+];
+
+// XP necessário para passar do nível N para N+1
+function xpForLevel(level) { return 20 + (level - 1) * 25; }
+
+const FORGE_COST = 15;        // energia por forja
+const MAX_STAMINA = 100;
+const SAVE_KEY = "forja-e-fama-save-v1";
+
+/* =====================================================
+   Estado
+===================================================== */
+let state = null;
+
+function newState() {
+  return {
+    day: 1,
+    gold: 20,
+    renown: 0,
+    techLevel: 1,
+    techXp: 0,
+    stamina: MAX_STAMINA,
+    materials: { madeira: 2, ferro: 2, couro: 0, carvao: 0, aco: 0, prata: 0 },
+    // items: { recipeId: { Comum: n, Boa: n, ... } }
+    items: {},
+    orders: [],
+  };
+}
+
+function save() { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+
+function load() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) { state = JSON.parse(raw); return; }
+  } catch (e) { /* save corrompido: começa de novo */ }
+  state = newState();
+  generateOrders();
+  log("Bem-vindo à forja! Colete materiais, forje itens e faça seu nome. 🔥");
+}
+
+/* =====================================================
+   Utilidades
+===================================================== */
+const $ = (sel) => document.querySelector(sel);
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function pick(arr) { return arr[rand(0, arr.length - 1)]; }
+
+function log(msg, cls) {
+  const el = document.createElement("p");
+  if (cls) el.className = cls;
+  el.textContent = `[Dia ${state.day}] ${msg}`;
+  $("#log").prepend(el);
+  while ($("#log").children.length > 60) $("#log").lastChild.remove();
+}
+
+function currentTitle() {
+  let title = TITLES[0].name;
+  for (const t of TITLES) if (state.renown >= t.renown) title = t.name;
+  return title;
+}
+
+function recipeById(id) { return RECIPES.find(r => r.id === id); }
+function qualityById(id) { return QUALITIES.find(q => q.id === id); }
+
+function canAfford(recipe) {
+  return Object.entries(recipe.mats).every(([m, q]) => (state.materials[m] || 0) >= q);
+}
+
+function itemCount(recipeId, qualityId) {
+  return (state.items[recipeId] && state.items[recipeId][qualityId]) || 0;
+}
+
+function addItem(recipeId, qualityId, n) {
+  if (!state.items[recipeId]) state.items[recipeId] = {};
+  state.items[recipeId][qualityId] = (state.items[recipeId][qualityId] || 0) + n;
+  if (state.items[recipeId][qualityId] <= 0) delete state.items[recipeId][qualityId];
+  if (Object.keys(state.items[recipeId]).length === 0) delete state.items[recipeId];
+}
+
+// Bônus de preço pelo renome: até +50%
+function renownBonus() { return 1 + Math.min(0.5, state.renown / 900); }
+
+function sellPrice(recipe, quality) {
+  return Math.round(recipe.price * quality.mult * renownBonus());
+}
+
+function gainXp(amount) {
+  state.techXp += amount;
+  let needed = xpForLevel(state.techLevel);
+  while (state.techXp >= needed) {
+    state.techXp -= needed;
+    state.techLevel++;
+    log(`Sua técnica evoluiu para o nível ${state.techLevel}! Novas receitas podem ter sido liberadas.`, "good");
+    needed = xpForLevel(state.techLevel);
+  }
+}
+
+function gainRenown(amount) {
+  const before = currentTitle();
+  state.renown += amount;
+  const after = currentTitle();
+  if (after !== before) log(`Seu nome se espalha! Agora você é conhecido como "${after}". ⭐`, "gold-msg");
+}
+
+/* =====================================================
+   Encomendas
+===================================================== */
+function generateOrders() {
+  const CUSTOMERS = ["Guarda da cidade", "Mercador viajante", "Cavaleiro errante", "Caçadora", "Capitão da milícia", "Nobre local", "Aventureiro", "Lenhador"];
+  const available = RECIPES.filter(r => !r.produces && r.tech <= state.techLevel + 1);
+  state.orders = [];
+  const count = rand(2, 3);
+  for (let i = 0; i < count; i++) {
+    const recipe = pick(available);
+    state.orders.push({
+      id: Date.now() + i,
+      customer: pick(CUSTOMERS),
+      recipeId: recipe.id,
+      premium: 1.4 + Math.random() * 0.6, // 1.4x a 2.0x
+      renown: 2 + recipe.tier,
+    });
+  }
+}
+
+function fulfillOrder(order) {
+  const recipe = recipeById(order.recipeId);
+  // usa o item de MENOR qualidade disponível (deixa os melhores pro mercado)
+  const owned = QUALITIES.filter(q => itemCount(recipe.id, q.id) > 0);
+  if (owned.length === 0) return;
+  const quality = owned[0];
+  addItem(recipe.id, quality.id, -1);
+  const price = Math.round(sellPrice(recipe, quality) * order.premium);
+  state.gold += price;
+  const renown = order.renown + quality.renown;
+  gainRenown(renown);
+  state.orders = state.orders.filter(o => o.id !== order.id);
+  log(`Encomenda entregue: ${recipe.name} (${quality.name}) para ${order.customer}. +${price} 🪙, +${renown} ⭐`, "gold-msg");
+  save(); render();
+}
+
+/* =====================================================
+   Coleta
+===================================================== */
+function gather(spot) {
+  if (state.stamina < spot.cost) { log("Você está exausto. Durma para recuperar energia.", "bad"); return; }
+  state.stamina -= spot.cost;
+  const results = [];
+  for (const y of spot.yields) {
+    const qty = rand(y.min, y.max);
+    if (qty > 0) {
+      state.materials[y.mat] = (state.materials[y.mat] || 0) + qty;
+      results.push(`${qty}x ${MATERIALS[y.mat].name}`);
+    }
+  }
+  log(results.length
+    ? `${spot.icon} ${spot.name}: você coletou ${results.join(", ")}.`
+    : `${spot.icon} ${spot.name}: você voltou de mãos vazias...`, results.length ? "good" : "bad");
+  save(); render();
+}
+
+/* =====================================================
+   Minigame da forja
+===================================================== */
+const forge = {
+  active: false,
+  recipe: null,
+  strikes: [],       // pontuação de cada batida (0-100)
+  pointerPos: 0,     // 0..1
+  dir: 1,
+  speed: 0,          // fração da barra por segundo
+  zoneCenter: 0.5,
+  zoneHalf: 0.15,
+  raf: null,
+  lastTs: 0,
+};
+
+function startForge(recipe) {
+  if (state.stamina < FORGE_COST) { log("Energia insuficiente para forjar. Durma um pouco.", "bad"); return; }
+  if (!canAfford(recipe)) return;
+
+  // consome recursos já no início — falhar tem custo!
+  for (const [m, q] of Object.entries(recipe.mats)) state.materials[m] -= q;
+  state.stamina -= FORGE_COST;
+
+  forge.active = true;
+  forge.recipe = recipe;
+  forge.strikes = [];
+  // zona maior com técnica alta, menor com receita difícil
+  forge.zoneHalf = Math.max(0.04, 0.13 + state.techLevel * 0.012 - recipe.tier * 0.03);
+  forge.speed = 0.55 + recipe.tier * 0.12;
+  nextStrike();
+
+  $("#forge-item-name").textContent = `${recipe.icon} Forjando: ${recipe.name}`;
+  $("#forge-result").textContent = "";
+  $("#btn-strike").disabled = false;
+  updateStrikeDots();
+  $("#forge-overlay").classList.add("open");
+  forge.lastTs = 0;
+  forge.raf = requestAnimationFrame(tickForge);
+  save(); render();
+}
+
+function nextStrike() {
+  forge.pointerPos = 0;
+  forge.dir = 1;
+  forge.zoneCenter = 0.3 + Math.random() * 0.4;
+  const bar = $("#strike-bar");
+  const zone = $("#strike-zone");
+  const center = $("#strike-center");
+  zone.style.left = ((forge.zoneCenter - forge.zoneHalf) * 100) + "%";
+  zone.style.width = (forge.zoneHalf * 2 * 100) + "%";
+  center.style.left = (forge.zoneCenter * 100) + "%";
+}
+
+function tickForge(ts) {
+  if (!forge.active) return;
+  if (!forge.lastTs) forge.lastTs = ts;
+  const dt = (ts - forge.lastTs) / 1000;
+  forge.lastTs = ts;
+  forge.pointerPos += forge.dir * forge.speed * dt;
+  if (forge.pointerPos >= 1) { forge.pointerPos = 1; forge.dir = -1; }
+  if (forge.pointerPos <= 0) { forge.pointerPos = 0; forge.dir = 1; }
+  $("#strike-pointer").style.left = `calc(${forge.pointerPos * 100}% - 2px)`;
+  forge.raf = requestAnimationFrame(tickForge);
+}
+
+function updateStrikeDots() {
+  const dots = $("#strike-dots").children;
+  for (let i = 0; i < dots.length; i++) {
+    dots[i].className = "";
+    const s = forge.strikes[i];
+    if (s === undefined) continue;
+    dots[i].className = s >= 80 ? "hit-great" : s >= 45 ? "hit-good" : "hit-poor";
+  }
+}
+
+function strike() {
+  if (!forge.active || forge.strikes.length >= 3) return;
+  const dist = Math.abs(forge.pointerPos - forge.zoneCenter);
+  // dentro da zona: 45-100 pontos conforme proximidade do centro; fora: cai rápido
+  let score;
+  if (dist <= forge.zoneHalf) {
+    score = Math.round(100 - (dist / forge.zoneHalf) * 55);
+  } else {
+    score = Math.max(0, Math.round(40 - (dist - forge.zoneHalf) * 200));
+  }
+  forge.strikes.push(score);
+  updateStrikeDots();
+
+  if (forge.strikes.length < 3) {
+    nextStrike();
+    return;
+  }
+  finishForge();
+}
+
+function finishForge() {
+  forge.active = false;
+  cancelAnimationFrame(forge.raf);
+  $("#btn-strike").disabled = true;
+
+  const avg = forge.strikes.reduce((a, b) => a + b, 0) / 3;
+  const recipe = forge.recipe;
+  const resultEl = $("#forge-result");
+
+  if (avg < 18) {
+    // falha: materiais perdidos, XP de consolo
+    gainXp(Math.ceil(recipe.xp / 3));
+    resultEl.innerHTML = `<span class="quality-Comum" style="color:var(--red)">💥 A peça rachou na têmpera! Materiais perdidos...</span>`;
+    log(`A forja de ${recipe.name} falhou. Os materiais foram perdidos.`, "bad");
+  } else if (recipe.produces) {
+    // receita de refino: quanto melhor, mais produz
+    const bonus = avg >= 80 ? 1 : 0;
+    const qty = recipe.produces.qty + bonus;
+    state.materials[recipe.produces.mat] = (state.materials[recipe.produces.mat] || 0) + qty;
+    gainXp(recipe.xp);
+    resultEl.innerHTML = `<span class="good" style="color:var(--green)">✔ Você produziu ${qty}x ${MATERIALS[recipe.produces.mat].name}!${bonus ? " (rendimento extra!)" : ""}</span>`;
+    log(`Refino concluído: +${qty} ${MATERIALS[recipe.produces.mat].name}.`, "good");
+  } else {
+    const quality = avg >= 85 ? QUALITIES[3] : avg >= 62 ? QUALITIES[2] : avg >= 40 ? QUALITIES[1] : QUALITIES[0];
+    addItem(recipe.id, quality.id, 1);
+    const xpMult = quality.id === "ObraPrima" ? 1.5 : quality.id === "Excelente" ? 1.25 : 1;
+    gainXp(Math.round(recipe.xp * xpMult));
+    resultEl.innerHTML = `✔ ${recipe.icon} ${recipe.name} — qualidade <b class="quality-${quality.id}">${quality.name}</b>!`;
+    log(`Você forjou: ${recipe.name} (${quality.name}).`, quality.id === "ObraPrima" ? "gold-msg" : "good");
+    if (quality.id === "ObraPrima") gainRenown(2);
+  }
+
+  save(); render();
+  setTimeout(() => $("#forge-overlay").classList.remove("open"), 1400);
+}
+
+/* =====================================================
+   Comércio
+===================================================== */
+function sellItem(recipeId, qualityId) {
+  const recipe = recipeById(recipeId);
+  const quality = qualityById(qualityId);
+  if (itemCount(recipeId, qualityId) <= 0) return;
+  addItem(recipeId, qualityId, -1);
+  const price = sellPrice(recipe, quality);
+  state.gold += price;
+  gainRenown(quality.renown + Math.ceil(recipe.tier / 2));
+  log(`Vendido no mercado: ${recipe.name} (${quality.name}) por ${price} 🪙.`, "gold-msg");
+  save(); render();
+}
+
+/* =====================================================
+   Dormir / novo dia
+===================================================== */
+function sleep() {
+  state.day++;
+  state.stamina = MAX_STAMINA;
+  generateOrders();
+  const EVENTS = [
+    "O galo canta. Um novo dia começa na forja.",
+    "Viajantes passam pela vila — bom dia para negócios.",
+    "O carvão da fornalha ainda está quente da noite passada.",
+    "Rumores sobre seu trabalho circulam na taverna.",
+  ];
+  log(`🌙 Você dormiu. ${pick(EVENTS)} Novas encomendas chegaram!`);
+  save(); render();
+}
+
+/* =====================================================
+   Renderização
+===================================================== */
+function render() {
+  $("#ui-day").textContent = state.day;
+  $("#ui-gold").textContent = state.gold;
+  $("#ui-renown").textContent = state.renown;
+  $("#ui-tech").textContent = state.techLevel;
+  $("#ui-title").textContent = currentTitle();
+  $("#ui-stamina").textContent = state.stamina;
+  $("#ui-stamina-bar").style.width = (state.stamina / MAX_STAMINA * 100) + "%";
+  $("#ui-xp-bar").style.width = (state.techXp / xpForLevel(state.techLevel) * 100) + "%";
+
+  renderGather();
+  renderRecipes();
+  renderOrders();
+  renderSell();
+  renderInventory();
+}
+
+function matsLabel(mats) {
+  return Object.entries(mats).map(([m, q]) => `${q}x ${MATERIALS[m].name}`).join(", ");
+}
+
+function renderGather() {
+  const el = $("#gather-list");
+  el.innerHTML = "";
+  for (const spot of GATHER_SPOTS) {
+    const locked = state.renown < spot.renown;
+    const card = document.createElement("div");
+    card.className = "card" + (locked ? " locked" : "");
+    card.innerHTML = `
+      <div class="info">
+        <div class="title">${spot.icon} ${spot.name}</div>
+        <div class="desc">${locked ? `🔒 Requer ${spot.renown} de renome` : spot.desc} — custa ${spot.cost} energia</div>
+      </div>`;
+    const btn = document.createElement("button");
+    btn.textContent = "Explorar";
+    btn.disabled = locked || state.stamina < spot.cost;
+    btn.onclick = () => gather(spot);
+    card.appendChild(btn);
+    el.appendChild(card);
+  }
+}
+
+function renderRecipes() {
+  const el = $("#recipe-list");
+  el.innerHTML = "";
+  for (const r of RECIPES) {
+    const locked = state.techLevel < r.tech;
+    const card = document.createElement("div");
+    card.className = "card" + (locked ? " locked" : "");
+    const priceLabel = r.produces ? "" : ` — vende por ~<span class="price">${sellPrice(r, QUALITIES[0])} 🪙</span>`;
+    card.innerHTML = `
+      <div class="info">
+        <div class="title">${r.icon} ${r.name} ${locked ? `🔒 (técnica ${r.tech})` : ""}</div>
+        <div class="desc">${r.desc ? r.desc + " " : ""}Requer: ${matsLabel(r.mats)}${priceLabel}</div>
+      </div>`;
+    const btn = document.createElement("button");
+    btn.textContent = "🔨 Forjar";
+    btn.disabled = locked || !canAfford(r) || state.stamina < FORGE_COST;
+    btn.title = !canAfford(r) ? "Materiais insuficientes" : "";
+    btn.onclick = () => startForge(r);
+    card.appendChild(btn);
+    el.appendChild(card);
+  }
+}
+
+function renderOrders() {
+  const el = $("#order-list");
+  el.innerHTML = "";
+  if (state.orders.length === 0) {
+    el.innerHTML = `<p class="hint">Nenhuma encomenda no momento. Durma para o dia seguinte.</p>`;
+    return;
+  }
+  for (const o of state.orders) {
+    const recipe = recipeById(o.recipeId);
+    const has = QUALITIES.some(q => itemCount(recipe.id, q.id) > 0);
+    const estPrice = Math.round(sellPrice(recipe, QUALITIES[0]) * o.premium);
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="info">
+        <div class="title">${recipe.icon} ${recipe.name}</div>
+        <div class="desc">${o.customer} pagará <span class="price">~${estPrice} 🪙</span> (+${o.renown}+ ⭐)</div>
+      </div>`;
+    const btn = document.createElement("button");
+    btn.textContent = has ? "📦 Entregar" : "Sem estoque";
+    btn.disabled = !has;
+    btn.onclick = () => fulfillOrder(o);
+    card.appendChild(btn);
+    el.appendChild(card);
+  }
+}
+
+function renderSell() {
+  const el = $("#sell-list");
+  el.innerHTML = "";
+  let any = false;
+  for (const [recipeId, byQuality] of Object.entries(state.items)) {
+    const recipe = recipeById(recipeId);
+    for (const [qualityId, qty] of Object.entries(byQuality)) {
+      if (qty <= 0) continue;
+      any = true;
+      const quality = qualityById(qualityId);
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="info">
+          <div class="title">${recipe.icon} ${recipe.name} <span class="quality-${quality.id}">(${quality.name})</span> ×${qty}</div>
+          <div class="desc">Preço de mercado: <span class="price">${sellPrice(recipe, quality)} 🪙</span></div>
+        </div>`;
+      const btn = document.createElement("button");
+      btn.textContent = "💰 Vender 1";
+      btn.onclick = () => sellItem(recipeId, qualityId);
+      card.appendChild(btn);
+      el.appendChild(card);
+    }
+  }
+  if (!any) el.innerHTML = `<p class="hint">Você não tem mercadorias. Vá para a forja!</p>`;
+}
+
+function renderInventory() {
+  const matEl = $("#inv-materials");
+  matEl.innerHTML = "";
+  for (const [id, def] of Object.entries(MATERIALS)) {
+    const qty = state.materials[id] || 0;
+    matEl.insertAdjacentHTML("beforeend",
+      `<span>${def.icon} ${def.name}</span><span class="qty">${qty}</span>`);
+  }
+  const itemEl = $("#inv-items");
+  itemEl.innerHTML = "";
+  let any = false;
+  for (const [recipeId, byQuality] of Object.entries(state.items)) {
+    const recipe = recipeById(recipeId);
+    for (const [qualityId, qty] of Object.entries(byQuality)) {
+      if (qty <= 0) continue;
+      any = true;
+      itemEl.insertAdjacentHTML("beforeend",
+        `<span>${recipe.icon} ${recipe.name} <span class="quality-${qualityId}">(${qualityById(qualityId).name})</span></span><span class="qty">${qty}</span>`);
+    }
+  }
+  if (!any) itemEl.innerHTML = `<span class="hint">Nada forjado ainda.</span>`;
+}
+
+/* =====================================================
+   Eventos de UI
+===================================================== */
+document.querySelectorAll(".tabs button").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+    btn.classList.add("active");
+    $("#tab-" + btn.dataset.tab).classList.add("active");
+  };
+});
+
+$("#btn-sleep").onclick = sleep;
+$("#btn-strike").onclick = strike;
+$("#btn-reset").onclick = () => {
+  if (confirm("Recomeçar o jogo do zero? Todo o progresso será perdido.")) {
+    localStorage.removeItem(SAVE_KEY);
+    state = newState();
+    generateOrders();
+    $("#log").innerHTML = "";
+    log("Uma nova jornada começa na forja. 🔥");
+    save(); render();
+  }
+};
+
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space" && forge.active) {
+    e.preventDefault();
+    strike();
+  }
+});
+
+/* =====================================================
+   Início
+===================================================== */
+load();
+render();
+</script>
+</body>
+</html>
