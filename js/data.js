@@ -78,6 +78,23 @@ const MODULES = [
           "Anote os sinais encontrados e passe ao eletricista: isso acelera (e barateia) o diagnóstico."
         ],
         tip: "Instalar um DR no quadro protege contra choques e é exigido por norma (NBR 5410) em áreas molhadas. Pergunte ao seu eletricista."
+      },
+      {
+        id: "tomada-nao-funciona",
+        title: "Tomada parou de funcionar: o roteiro de verificação",
+        difficulty: "easy",
+        time: "15 min",
+        tools: ["Um aparelho que você sabe que funciona (ex.: carregador de celular)", "Lanterna"],
+        warning: "Este roteiro é só de VERIFICAÇÃO — nada de abrir a tomada. Se ela estiver derretida, escurecida, solta da parede ou cheirando a queimado, não use e chame um eletricista.",
+        steps: [
+          "Descarte o óbvio: teste OUTRO aparelho na mesma tomada — às vezes o defeito é do aparelho (ou do carregador), não da tomada.",
+          "Teste o mesmo aparelho em outra tomada do cômodo: se várias pararam juntas, o problema é no circuito, não na tomada.",
+          "Vá ao quadro de energia: procure disjuntor desarmado (alavanca para baixo ou no meio) e o DR — religue UMA vez.",
+          "Se desarmar de novo em seguida, PARE: há curto ou fuga no circuito. Deixe desarmado e chame um eletricista.",
+          "Se o disjuntor está armado e só UMA tomada não funciona, o mau contato é interno (fio solto no borne) — troca/reaperto é serviço rápido de eletricista.",
+          "Anote o que descobriu (quais tomadas, qual disjuntor): essa informação encurta — e barateia — a visita do profissional."
+        ],
+        tip: "Tomada que 'funciona se mexer no plugue' é fio solto esquentando lá dentro: risco real de incêndio. Não conviva com ela — reaperto custa pouco."
       }
     ],
     quiz: [
@@ -344,6 +361,40 @@ const MODULES = [
         ],
         tip: "Uma torneira pingando desperdiça até 45 litros por dia — e o courinho que resolve custa centavos. É o conserto com melhor custo-benefício da casa.",
         figure: { svg: DIAGRAMS.torneira, caption: "A torneira em corte: o pinga-pinga quase sempre nasce no courinho, na ponta do castelo." }
+      },
+      {
+        id: "desentupir-vaso",
+        title: "Como desentupir o vaso sanitário (3 métodos)",
+        difficulty: "easy",
+        time: "30-60 min",
+        tools: ["Luvas", "Detergente de louça", "Balde com água morna", "Desentupidor de vaso (tipo fole)", "Filme plástico (método 3)"],
+        warning: "Nunca use soda cáustica (queimaduras graves e danifica a tubulação) nem água FERVENTE — o choque térmico trinca a louça. Água morna, no máximo.",
+        steps: [
+          "Se a água subiu, NÃO dê outra descarga — ela pode transbordar. Espere o nível baixar.",
+          "Método 1 (o mais simples): despeje 3 colheres de sopa de detergente de louça, espere descer, adicione meio balde de água MORNA e aguarde 20-30 minutos. O detergente lubrifica e desmancha o bloqueio.",
+          "Método 2: use o desentupidor próprio para vaso (o de fole/sanfona, não o de pia): encaixe bem no fundo e bombeie com força 10 a 15 vezes.",
+          "Método 3 (pressão): forre a boca do vaso com várias camadas de filme plástico bem vedado, dê a descarga e empurre o 'balão' que se forma para baixo — a pressão desloca o entupimento.",
+          "Teste jogando um balde de água antes de usar a descarga de novo.",
+          "Se nada resolver, ou se entupir toda semana, pode haver um objeto preso ou problema na rede — hora da desentupidora profissional."
+        ],
+        tip: "Prevenção: lixeira ao lado do vaso. Papel em excesso é a causa nº 1 — e lenço umedecido, fio dental e absorvente NUNCA vão na privada, mesmo os que se dizem 'descartáveis'."
+      },
+      {
+        id: "cheiro-esgoto",
+        title: "Cheiro de esgoto no banheiro: de onde vem e como acabar",
+        difficulty: "easy",
+        time: "20 min",
+        tools: ["Balde ou jarra de água", "Escova pequena", "Detergente"],
+        warning: "Se o cheiro vier acompanhado de retorno de espuma/água pelos ralos, o problema é na rede — acione o síndico (apartamento) ou uma desentupidora.",
+        steps: [
+          "Suspeito nº 1 — ralo seco: em banheiros pouco usados, a água do fecho hídrico evapora e o cheiro do esgoto sobe livre. Jogue um jarro de água em CADA ralo e o cheiro some em minutos.",
+          "Limpe o ralo: remova a grelha e tire cabelos e sabão acumulados, que também fedem.",
+          "Confira o sifão da pia: modelos 'sanfonados' mal instalados (sem a curva que retém água) deixam o cheiro passar — a curva deve ficar sempre com água dentro.",
+          "Cheiro perto da base do vaso: a vedação (anel de cera ou argamassa) pode ter ressecado — aí é serviço de encanador.",
+          "Máquina de lavar com mangueira enfiada direto no esgoto, sem curva, também deixa o cheiro subir: faça uma curva em 'U' na mangueira.",
+          "Prevenção: em banheiros de hóspedes, jogue água nos ralos a cada 2 semanas — ou instale ralos com fechamento (clique)."
+        ],
+        tip: "9 em cada 10 casos de 'cheiro de esgoto misterioso' são só ralo seco. Antes de chamar qualquer profissional, jogue água nos ralos e espere 10 minutos."
       }
     ],
     quiz: [
@@ -401,6 +452,28 @@ const MODULES = [
         ],
         answer: 1,
         explain: "Com tudo fechado, o hidrômetro parado = sem vazamento interno; girando = há vazamento (caixa acoplada e tubulações enterradas são suspeitos comuns)."
+      },
+      {
+        q: "Para desentupir um vaso sanitário, por que NÃO usar água fervente?",
+        options: [
+          "Porque esfria rápido demais",
+          "Porque o choque térmico pode trincar a louça — use água morna",
+          "Porque água quente não ajuda em nada",
+          "Pode usar fervente sem problema"
+        ],
+        answer: 1,
+        explain: "A louça sanitária é cerâmica: água fervente causa choque térmico e pode trincá-la — aí o conserto vira troca do vaso inteiro. Água morna + detergente tem o mesmo efeito, sem risco."
+      },
+      {
+        q: "Banheiro de hóspedes com cheiro de esgoto, usado raramente. Antes de chamar alguém, tente:",
+        options: [
+          "Jogar água nos ralos para repor o fecho hídrico que evaporou",
+          "Vedar os ralos com fita adesiva",
+          "Deixar a janela fechada para o cheiro não se espalhar",
+          "Trocar o vaso sanitário"
+        ],
+        answer: 0,
+        explain: "Ralos pouco usados secam: a água do sifão evapora e o cheiro do esgoto sobe direto. Repor a água resolve na hora — é a causa nº 1 desse 'mistério'."
       },
       {
         q: "Uma torneira comum está pingando sem parar. A causa mais provável (e barata de resolver) é:",
@@ -731,6 +804,40 @@ const MODULES = [
         html: STAIN_TABLE_HTML
       },
       {
+        id: "maquina-lavar-cheiro",
+        title: "Máquina de lavar com mau cheiro: limpeza completa",
+        difficulty: "easy",
+        time: "40 min + 1 ciclo",
+        tools: ["Vinagre de álcool (2 xícaras)", "Bicarbonato", "Pano de microfibra", "Escova de dentes velha"],
+        warning: "Nunca misture vinagre com água sanitária (libera gás tóxico). Use um de cada vez, com ciclo de enxágue completo entre eles.",
+        steps: [
+          "Rode um ciclo VAZIO, com água na temperatura mais alta que sua máquina permitir, e 2 xícaras de vinagre de álcool no cesto — isso dissolve resíduo de sabão e biofilme (a 'gosma' que fede).",
+          "Retire a gaveta de sabão/amaciante e lave na pia com escova — é um dos pontos que mais acumulam mofo.",
+          "Na máquina de abrir frontal: limpe a dobra da borracha da porta com pano e vinagre — levante a borracha; a sujeira fica escondida ali.",
+          "Localize e limpe o filtro de detritos (portinhola na parte de baixo, na maioria dos modelos): coloque um pano e uma vasilha rasa antes, sai água.",
+          "Rode um segundo ciclo vazio só com água (ou com 1/2 xícara de bicarbonato) para enxaguar.",
+          "Daqui em diante: deixe a PORTA e a gaveta ABERTAS entre lavagens, e nunca esqueça roupa molhada dentro — são as duas causas do cheiro voltar."
+        ],
+        tip: "O mau cheiro não é 'da máquina': é biofilme de sabão + umidade parada. Excesso de sabão em cada lavagem ALIMENTA o problema — dose certo e o cheiro demora muito mais a voltar."
+      },
+      {
+        id: "limpar-box",
+        title: "Box do banheiro transparente de novo (adeus, mancha branca)",
+        difficulty: "easy",
+        time: "30 min",
+        tools: ["Vinagre de álcool", "Detergente neutro", "Borrifador", "Esponja macia", "Rodinho de vidro"],
+        warning: "Nunca use esponja de aço, saponáceo em pó ou lâminas no vidro — riscam para sempre. E não use produtos ácidos nas partes de alumínio/metal do box.",
+        steps: [
+          "Entenda a mancha: o embaçado branco é calcário da água + resíduo de sabão. Produto 'milagroso' não existe; ácido fraco (vinagre) + constância, sim.",
+          "Misture no borrifador: 1 parte de vinagre de álcool + 1 parte de água + gotas de detergente neutro.",
+          "Borrife generosamente no vidro e deixe agir 15 minutos (nas crostas grossas, cole papel-toalha encharcado sobre a área).",
+          "Esfregue com esponja macia em movimentos amplos e enxágue com água.",
+          "Seque com rodinho ou pano de microfibra — secar é o que evita novas manchas.",
+          "Trilhos e borrachas: escova de dentes velha com a mesma solução resolve o acúmulo escuro."
+        ],
+        tip: "O segredo dos boxes sempre transparentes: 30 segundos de rodinho após CADA banho. Sem água secando no vidro, o calcário não se forma — e você nunca mais esfrega pesado."
+      },
+      {
         id: "rotina-limpeza",
         title: "Montando uma rotina de limpeza realista",
         difficulty: "easy",
@@ -860,6 +967,23 @@ const MODULES = [
         tip: "Mofo no armário? Potinhos de giz escolar ou de carvão dentro dele absorvem umidade e reduzem muito o problema."
       },
       {
+        id: "ar-condicionado",
+        title: "Ar-condicionado pingando ou gelando pouco: o que fazer",
+        difficulty: "medium",
+        time: "30 min",
+        tools: ["Escada firme", "Aspirador de pó", "Pano", "Água e detergente neutro (para os filtros)"],
+        warning: "Desligue o aparelho da tomada (ou o disjuntor) antes de abrir a tampa. Recarga de gás, placa eletrônica e limpeza interna profunda são serviços de técnico credenciado.",
+        steps: [
+          "Pingando DENTRO de casa: 90% das vezes é o dreno entupido — a água da condensação não escoa e transborda pela bandeja.",
+          "Abra a tampa frontal da evaporadora e retire os filtros de tela (saem sem ferramenta).",
+          "Lave os filtros com água corrente e detergente neutro, seque à sombra e recoloque — filtro sujo causa pinga-pinga, pouco rendimento E conta alta.",
+          "Localize a mangueirinha de dreno (sai da unidade interna para fora): aspire a ponta externa com o aspirador para sugar o entupimento, ou passe um arame flexível com cuidado.",
+          "Gelo na serpentina ou soprando ar 'fraco' mesmo com filtro limpo: pode ser gás baixo ou sensor — aí é técnico.",
+          "Rotina: filtros a cada 15-30 dias de uso, e a famosa 'higienização' completa com técnico 1x por ano."
+        ],
+        tip: "Ar 'gelando pouco' no verão quase sempre é filtro sujo — a limpeza é grátis, leva 15 minutos e devolve o rendimento. Comece SEMPRE por ela antes de pensar em gás."
+      },
+      {
         id: "infiltracao",
         title: "Lendo os sinais de infiltração antes do estrago",
         difficulty: "medium",
@@ -921,6 +1045,17 @@ const MODULES = [
         ],
         answer: 1,
         explain: "Água desce: mancha sob área molhada do vizinho aponta para o box, rejuntes ou canos dele. Documentar com fotos ajuda na conversa e no reparo."
+      },
+      {
+        q: "O ar-condicionado está pingando água DENTRO do quarto. A causa mais comum é:",
+        options: [
+          "Excesso de gás refrigerante",
+          "Dreno entupido ou filtros sujos impedindo o escoamento da condensação",
+          "O aparelho está com a potência alta demais",
+          "Chuva entrando pela parede"
+        ],
+        answer: 1,
+        explain: "A condensação normal do ar vira água que deve escoar pelo dreno. Filtro sujo e dreno entupido fazem a bandeja transbordar para dentro. Limpar filtros e aspirar o dreno resolve a maioria dos casos."
       },
       {
         q: "Qual atitude NÃO faz parte de uma boa prevenção contra mofo?",

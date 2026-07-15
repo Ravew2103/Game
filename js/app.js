@@ -75,7 +75,7 @@ function renderModules() {
     <div class="grid">${MODULES.map(moduleCardHTML).join("")}</div>`;
 }
 
-function renderModule(moduleId) {
+function renderModule(moduleId, openGuideId) {
   const mod = MODULES.find(m => m.id === moduleId);
   if (!mod) { renderNotFound(); return; }
   const prog = moduleProgress(mod);
@@ -117,6 +117,15 @@ function renderModule(moduleId) {
       document.getElementById("guide-" + g.id).classList.add("open");
     });
   });
+
+  // deep-link (ex.: vindo da busca): abre e rola até o guia
+  if (openGuideId) {
+    const target = document.getElementById("guide-" + openGuideId);
+    if (target) {
+      target.classList.add("open");
+      setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+    }
+  }
 }
 
 function guideHTML(mod, g) {
@@ -134,6 +143,7 @@ function guideHTML(mod, g) {
       <div class="guide-body">
         ${g.warning ? `<div class="callout callout-danger"><span>⚠️</span><div><strong>Segurança primeiro:</strong> ${g.warning}</div></div>` : ""}
         ${g.figure ? `<figure class="figure">${g.figure.svg}<figcaption class="figure-caption">${g.figure.caption}</figcaption></figure>` : ""}
+        ${g.photo ? `<figure class="figure figure-photo"><img src="${g.photo.src}" alt="${g.photo.alt || ""}" loading="lazy" onerror="this.parentElement.style.display='none'"><figcaption class="figure-caption">${g.photo.caption || g.photo.alt || ""}</figcaption></figure>` : ""}
         <strong style="font-size:.85rem">🧰 Você vai precisar de:</strong>
         <div class="tools-list">${g.tools.map(t => `<span>${t}</span>`).join("")}</div>
         <ol class="steps">${g.steps.map(s => `<li>${s}</li>`).join("")}</ol>
@@ -234,6 +244,127 @@ function renderProgress() {
   });
 }
 
+/* ---------- Busca ---------- */
+
+function normalizeText(s) {
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+// Índice construído uma única vez a partir do conteúdo
+let SEARCH_INDEX = null;
+function buildSearchIndex() {
+  if (SEARCH_INDEX) return SEARCH_INDEX;
+  const idx = [];
+  MODULES.forEach(mod => {
+    mod.guides.forEach(g => {
+      idx.push({
+        kind: "guide",
+        title: g.title,
+        context: mod.icon + " " + mod.name + " · Guia prático",
+        href: `#/modulo/${mod.id}/${g.id}`,
+        text: [g.title, g.warning || "", g.tip || "", (g.tools || []).join(" "), g.steps.join(" ")].join(" ")
+      });
+    });
+    mod.quiz.forEach(q => {
+      idx.push({
+        kind: "quiz",
+        title: q.q,
+        context: mod.icon + " " + mod.name + " · Pergunta de quiz",
+        href: `#/quiz/${mod.id}`,
+        text: [q.q, q.explain].join(" ")
+      });
+    });
+  });
+  EMERGENCY_SCENARIOS.forEach(sc => {
+    idx.push({
+      kind: "scenario",
+      title: sc.situation,
+      context: sc.tag + " · Jogo de emergências",
+      href: "#/jogo/emergencia",
+      text: [sc.situation, sc.explain].join(" ")
+    });
+  });
+  TOOL_PAIRS.forEach(p => {
+    idx.push({
+      kind: "tool",
+      title: p.tool,
+      context: "🧰 Ferramenta · Jogo de pares",
+      href: "#/jogo/pares",
+      text: p.tool + " " + p.task
+    });
+  });
+  idx.forEach(e => { e.norm = normalizeText(e.text); e.normTitle = normalizeText(e.title); });
+  SEARCH_INDEX = idx;
+  return idx;
+}
+
+function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+function highlight(text, terms) {
+  let out = text;
+  terms.forEach(t => {
+    // casa a versão com ou sem acento da palavra digitada
+    const pattern = escapeRegExp(t).replace(/[aeiouc]/g, ch => ({
+      a: "[aáàâãä]", e: "[eéèêë]", i: "[iíìîï]", o: "[oóòôõö]", u: "[uúùûü]", c: "[cç]"
+    }[ch]));
+    out = out.replace(new RegExp("(" + pattern + ")", "gi"), "<mark>$1</mark>");
+  });
+  return out;
+}
+
+function snippet(entry, terms) {
+  const pos = entry.norm.indexOf(terms[0]);
+  if (pos < 0) return "";
+  const start = Math.max(0, pos - 60);
+  const raw = entry.text.slice(start, pos + 120);
+  return (start > 0 ? "…" : "") + raw + "…";
+}
+
+const KIND_ORDER = { guide: 0, quiz: 1, scenario: 2, tool: 3 };
+
+function renderSearch(query) {
+  const input = document.getElementById("search-input");
+  if (input) input.value = query;
+
+  const terms = normalizeText(query.trim()).split(/\s+/).filter(t => t.length >= 2);
+  if (!terms.length) {
+    app.innerHTML = `
+      <h2 class="section-title">🔍 Busca</h2>
+      <p class="section-sub">Digite ao menos 2 letras — por exemplo: <em>vaso</em>, <em>chuveiro</em>, <em>mancha</em>, <em>cheiro</em>…</p>`;
+    return;
+  }
+
+  const results = buildSearchIndex()
+    .filter(e => terms.every(t => e.norm.includes(t)))
+    .sort((a, b) => {
+      // título batendo vem antes; depois guias > quiz > cenários > ferramentas
+      const at = terms.some(t => a.normTitle.includes(t)) ? 0 : 1;
+      const bt = terms.some(t => b.normTitle.includes(t)) ? 0 : 1;
+      return (at - bt) || (KIND_ORDER[a.kind] - KIND_ORDER[b.kind]);
+    });
+
+  app.innerHTML = `
+    <h2 class="section-title">🔍 Resultados para “${query}”</h2>
+    <p class="section-sub">${results.length ? results.length + " resultado(s) encontrado(s)." : "Nada encontrado. Tente outra palavra — ex.: vazamento, disjuntor, mofo, ferrugem…"}</p>
+    ${results.map(e => `
+      <a class="result-item" href="${e.href}">
+        <span class="result-kind">${e.context}</span>
+        <h4>${highlight(e.title, terms)}</h4>
+        <p>${highlight(snippet(e, terms), terms)}</p>
+      </a>`).join("")}`;
+}
+
+function initSearchForm() {
+  const form = document.getElementById("search-form");
+  const input = document.getElementById("search-input");
+  if (!form || !input) return;
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const q = input.value.trim();
+    if (q) location.hash = "#/busca/" + encodeURIComponent(q);
+  });
+}
+
 function renderNotFound() {
   app.innerHTML = `
     <div class="hero">
@@ -260,8 +391,9 @@ function route() {
 
   switch (parts[0]) {
     case "modulos": setActiveNav("modulos"); renderModules(); break;
-    case "modulo": setActiveNav("modulos"); renderModule(parts[1]); break;
+    case "modulo": setActiveNav("modulos"); renderModule(parts[1], parts[2]); break;
     case "quiz": setActiveNav("modulos"); renderQuiz(parts[1]); break;
+    case "busca": setActiveNav(""); renderSearch(decodeURIComponent(parts.slice(1).join("/") || "")); break;
     case "jogos": setActiveNav("jogos"); renderGames(); break;
     case "jogo":
       setActiveNav("jogos");
@@ -275,5 +407,6 @@ function route() {
 }
 
 window.addEventListener("hashchange", route);
+initSearchForm();
 updatePlayerChip();
 route();

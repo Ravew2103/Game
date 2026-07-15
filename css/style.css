@@ -86,6 +86,54 @@ body {
 .topnav a:hover { background: var(--surface-2); color: var(--text); }
 .topnav a.active { background: var(--primary); color: #fff; }
 
+.search-form { display: flex; }
+.search-form input {
+  font: inherit;
+  font-size: .85rem;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: .38rem .95rem;
+  width: 230px;
+  transition: border-color .15s, width .2s;
+}
+.search-form input:focus {
+  outline: none;
+  border-color: var(--primary);
+  width: 270px;
+}
+.search-form input::placeholder { color: var(--text-muted); }
+
+/* ---------- Página de busca ---------- */
+.result-item {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: .9rem 1.1rem;
+  margin-bottom: .6rem;
+  text-decoration: none;
+  color: var(--text);
+  transition: transform .12s, box-shadow .12s;
+}
+.result-item:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.result-item h4 { font-size: .98rem; margin-bottom: .15rem; }
+.result-item .result-kind {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-muted);
+}
+.result-item p { font-size: .85rem; color: var(--text-muted); margin-top: .2rem; }
+.result-item mark {
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 .1em;
+}
+
 .player-chip {
   display: flex;
   align-items: center;
@@ -418,6 +466,13 @@ body {
   text-align: center;
   margin-top: .6rem;
 }
+.figure-photo img {
+  display: block;
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+  border-radius: 8px;
+}
 
 .guide-table-wrap { overflow-x: auto; margin: 1rem 0; }
 .guide-table {
@@ -667,5 +722,7 @@ body {
   .topbar { gap: .6rem; }
   .player-chip { order: 2; margin-left: auto; }
   .topnav { order: 3; width: 100%; justify-content: center; }
+  .search-form { order: 4; width: 100%; }
+  .search-form input, .search-form input:focus { width: 100%; }
   .app { padding: 1rem .8rem 2.5rem; }
 }

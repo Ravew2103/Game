@@ -39,6 +39,19 @@ js/games.js       # jogo de emergências e jogo de pares
 js/app.js         # roteador e renderização das páginas
 ```
 
+## 🖼️ Fotos reais nos guias
+
+Os diagramas são SVG desenhados em código (funcionam offline e em qualquer tema). Para adicionar **fotos reais**:
+
+1. Coloque a imagem em `assets/img/` (ex.: `assets/img/trocar-chuveiro.jpg`) — prefira JPEG/WebP de até ~150 KB e ~1000 px de largura.
+2. No guia correspondente em `js/data.js`, adicione o campo:
+   ```js
+   photo: { src: "assets/img/trocar-chuveiro.jpg", alt: "Chuveiro elétrico instalado", caption: "Foto: seu crédito aqui" }
+   ```
+3. Pronto — a foto aparece no guia, com legenda. Se o arquivo não existir, a figura se esconde sozinha (nada quebra).
+
+Fontes de fotos com licença livre: [Wikimedia Commons](https://commons.wikimedia.org), [Unsplash](https://unsplash.com), [Pexels](https://pexels.com) — verifique a licença e dê o crédito na legenda.
+
 ## ➕ Como adicionar conteúdo
 
 Todo o conteúdo vive em `js/data.js`:
