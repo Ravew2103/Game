@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Casa Segura — Conhecimento prático para sua casa</title>
+  <meta name="description" content="Plataforma interativa de conhecimentos úteis para casa: elétrica, gás, encanamento, carpintaria, marcenaria, limpeza e manutenção. Com guias visuais, quizzes e jogos.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="#/" class="brand" id="brand">
+      <span class="brand-icon">🏠</span>
+      <span class="brand-name">Casa<strong>Segura</strong></span>
+    </a>
+    <nav class="topnav">
+      <a href="#/" data-nav="home">Início</a>
+      <a href="#/modulos" data-nav="modulos">Módulos</a>
+      <a href="#/jogos" data-nav="jogos">Jogos</a>
+      <a href="#/progresso" data-nav="progresso">Progresso</a>
+    </nav>
+    <div class="player-chip" id="player-chip" title="Seu nível e XP">
+      <span id="chip-level">Nv 1</span>
+      <div class="chip-bar"><div class="chip-bar-fill" id="chip-bar-fill"></div></div>
+      <span id="chip-xp">0 XP</span>
+    </div>
+  </header>
+
+  <main id="app" class="app"></main>
+
+  <footer class="footer">
+    <p>⚠️ <strong>Aviso importante:</strong> este conteúdo é educativo. Serviços em <strong>gás</strong> e alterações na <strong>rede elétrica</strong> devem ser feitos por profissionais habilitados. Na dúvida, chame um especialista.</p>
+    <p class="footer-muted">Casa Segura — aprenda, pratique com segurança e cuide bem da sua casa.</p>
+  </footer>
+
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/quiz.js"></script>
+  <script src="js/games.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
