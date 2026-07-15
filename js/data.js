@@ -22,7 +22,28 @@ const MODULES = [
           "Cole uma etiqueta identificando cada disjuntor (ex.: 'Chuveiro', 'Tomadas cozinha', 'Iluminação quartos').",
           "Teste o botão do DR (diferencial residual), se houver: aperte 'teste' e veja se ele desarma. Se não desarmar, chame um eletricista."
         ],
-        tip: "Disjuntor que desarma repetidamente é um aviso de sobrecarga ou curto — não fique religando: investigue a causa ou chame um profissional."
+        tip: "Disjuntor que desarma repetidamente é um aviso de sobrecarga ou curto — não fique religando: investigue a causa ou chame um profissional.",
+        figure: { svg: DIAGRAMS.quadro, caption: "Um quadro típico: disjuntor geral, DR (proteção contra choques) e um disjuntor por circuito." }
+      },
+      {
+        id: "trocar-chuveiro",
+        title: "Como trocar o chuveiro elétrico",
+        difficulty: "medium",
+        time: "40 min",
+        tools: ["Chuveiro novo (mesma tensão, potência igual ou menor)", "Fita veda-rosca", "Conectores de emenda", "Chave de fenda", "Escada firme"],
+        warning: "Desligue o disjuntor do chuveiro no quadro e CONFIRME que não há energia (tente ligar o chuveiro antigo). Se a fiação estiver derretida, escurecida ou sem fio terra, pare e chame um eletricista.",
+        steps: [
+          "Confira a compatibilidade: a tensão (127 V ou 220 V) deve ser a da sua rede, e a potência igual ou menor que a do chuveiro antigo — potência maior exige fiação e disjuntor reforçados (avaliação de eletricista).",
+          "Desligue o disjuntor do chuveiro e feche o registro de água do banheiro.",
+          "Fotografe a ligação dos fios, desconecte-os e desrosqueie o chuveiro antigo girando o corpo (anti-horário).",
+          "Limpe a rosca do cano e aplique fita veda-rosca: 3 a 5 voltas, no mesmo sentido da rosca.",
+          "Rosqueie o chuveiro novo apenas com a mão — o corpo é plástico e trinca com ferramenta ou aperto excessivo.",
+          "Emende os fios com conectores (os dois da rede nos dois do chuveiro; o terra no fio verde), isole e acomode sem esticar.",
+          "Abra o registro e deixe a água encher o chuveiro ANTES de religar o disjuntor — resistência ligada a seco queima na hora.",
+          "Religue o disjuntor e teste as posições de temperatura."
+        ],
+        tip: "Nunca mude a chave inverno/verão com o chuveiro ligado ou debaixo d'água: desligue, espere alguns segundos, mude e religue. Isso vale também na hora de trocar só a resistência.",
+        figure: { svg: DIAGRAMS.chuveiro, caption: "Anatomia da troca: veda-rosca no cano, aperto só com a mão, emendas isoladas e terra conectado." }
       },
       {
         id: "trocar-lampada",
@@ -114,6 +135,17 @@ const MODULES = [
         ],
         answer: 1,
         explain: "Cada circuito suporta uma corrente máxima. Somando vários aparelhos, o fio esquenta além do limite — causa comum de incêndios residenciais."
+      },
+      {
+        q: "Ao trocar um chuveiro elétrico, por que abrir a água ANTES de religar o disjuntor?",
+        options: [
+          "Para conferir se a pressão está boa",
+          "Porque a resistência ligada sem água queima em segundos",
+          "Para lavar a fita veda-rosca",
+          "Não faz diferença a ordem"
+        ],
+        answer: 1,
+        explain: "A resistência foi projetada para aquecer imersa em água. A seco, ela superaquece e rompe quase instantaneamente — chuveiro novo queimado no primeiro uso."
       }
     ]
   },
@@ -292,7 +324,26 @@ const MODULES = [
           "Recoloque o sifão conferindo os anéis de vedação e teste com bastante água.",
           "Se o entupimento persistir ou voltar sempre, o problema pode estar na rede — chame um profissional com máquina de desentupir."
         ],
-        tip: "Prevenção vale ouro: nunca jogue óleo de cozinha na pia (entope e polui). Guarde em garrafa e leve a um ponto de coleta."
+        tip: "Prevenção vale ouro: nunca jogue óleo de cozinha na pia (entope e polui). Guarde em garrafa e leve a um ponto de coleta.",
+        figure: { svg: DIAGRAMS.sifao, caption: "O sifão em corte: o copo desrosqueia com a mão e é onde a sujeira acumula. A água parada no fundo é o que impede o cheiro do esgoto de subir." }
+      },
+      {
+        id: "torneira-pingando",
+        title: "Torneira pingando: troque o courinho (ou a torneira)",
+        difficulty: "medium",
+        time: "30 min",
+        tools: ["Chave inglesa", "Courinho/reparo novo", "Fita veda-rosca", "Pano"],
+        warning: "Feche o registro do setor antes de desmontar qualquer coisa e abra a torneira para aliviar a pressão. Envolva as peças cromadas com pano para a chave não riscar.",
+        steps: [
+          "Feche o registro e abra a torneira até parar de sair água.",
+          "Retire a tampinha decorativa do volante, solte o parafuso e remova o volante.",
+          "Desrosqueie o castelo (o miolo) com a chave inglesa, protegendo o cromado com um pano.",
+          "Na ponta do castelo está o courinho (vedante) gasto: troque por um idêntico — leve o antigo à loja para comparar.",
+          "Remonte tudo, aperte firme sem exagerar e reabra o registro para testar.",
+          "Se ainda pingar, a sede interna pode estar gasta: aí vale trocar a torneira — desrosqueie a antiga, limpe a rosca do cano, aplique 5 voltas de veda-rosca e rosqueie a nova."
+        ],
+        tip: "Uma torneira pingando desperdiça até 45 litros por dia — e o courinho que resolve custa centavos. É o conserto com melhor custo-benefício da casa.",
+        figure: { svg: DIAGRAMS.torneira, caption: "A torneira em corte: o pinga-pinga quase sempre nasce no courinho, na ponta do castelo." }
       }
     ],
     quiz: [
@@ -350,6 +401,17 @@ const MODULES = [
         ],
         answer: 1,
         explain: "Com tudo fechado, o hidrômetro parado = sem vazamento interno; girando = há vazamento (caixa acoplada e tubulações enterradas são suspeitos comuns)."
+      },
+      {
+        q: "Uma torneira comum está pingando sem parar. A causa mais provável (e barata de resolver) é:",
+        options: [
+          "A pressão da rua está alta demais",
+          "O courinho/vedante na ponta do castelo está gasto",
+          "O cano da parede está trincado",
+          "A bica está entortada"
+        ],
+        answer: 1,
+        explain: "O courinho é uma borrachinha que veda a passagem quando você fecha a torneira. Com o tempo ela resseca e deforma — trocar custa centavos e resolve a grande maioria dos casos."
       }
     ]
   },
@@ -376,7 +438,8 @@ const MODULES = [
           "Fure perpendicular à parede, começando devagar e sem forçar. Em azulejo, desligue o modo impacto até atravessar o esmalte.",
           "Insira a bucha faceando a parede, parafuse o suporte e confira o aperto."
         ],
-        tip: "Truque do saquinho: prenda um saco plástico ou envelope aberto com fita logo abaixo do furo para aparar o pó."
+        tip: "Truque do saquinho: prenda um saco plástico ou envelope aberto com fita logo abaixo do furo para aparar o pó.",
+        figure: { svg: DIAGRAMS.paredeZonas, caption: "Zonas de risco (vermelho): eletrodutos correm na vertical a partir de tomadas e interruptores, e na horizontal na altura das tomadas. Verde = áreas mais seguras." }
       },
       {
         id: "prateleira",
@@ -632,6 +695,42 @@ const MODULES = [
         tip: "Microfibra limpa mais com menos produto e não risca. Tenha panos de cores diferentes por área (cozinha, banheiro, superfícies) para não cruzar contaminação."
       },
       {
+        id: "lavar-roupa",
+        title: "Como lavar roupa sem estragar (decifrando a etiqueta)",
+        difficulty: "easy",
+        time: "20 min",
+        tools: ["Cesto para separar", "Sabão (pó ou líquido)", "Amaciante (opcional)", "As etiquetas das peças"],
+        warning: "Sabão demais não limpa mais: o excesso fica retido no tecido, encardece as peças, irrita a pele e ainda pode danificar a máquina. Siga a dosagem da embalagem.",
+        steps: [
+          "Separe as peças: brancas, coloridas escuras e delicadas. Toalhas e jeans soltam fiapos e tinta — lave separado das peças finas.",
+          "Leia a etiqueta de cada peça nova (veja o diagrama): ela diz a temperatura máxima, se pode alvejante, secadora e ferro.",
+          "Feche zíperes e velcros (rasgam outras peças) e vire do avesso jeans, estampas e roupas escuras.",
+          "Trate manchas ANTES de lavar — água morna/quente fixa muitas manchas para sempre.",
+          "Dose o sabão pela quantidade de roupa e sujeira, e prefira água fria: preserva cores e economiza energia.",
+          "Terminou o ciclo? Estenda logo (roupa esquecida na máquina azeda e precisa ser relavada), de preferência à sombra para não desbotar."
+        ],
+        tip: "Peça 'que encolheu' quase sempre foi vítima de calor: água quente ou secadora no máximo. Na dúvida, água fria e sombra nunca estragam nada.",
+        figure: { svg: DIAGRAMS.etiquetas, caption: "Os 5 símbolos-base de qualquer etiqueta. A regra universal: um X sobre o símbolo significa 'não faça'." }
+      },
+      {
+        id: "tirar-manchas",
+        title: "Guia de manchas: aja rápido e com o produto certo",
+        difficulty: "easy",
+        time: "leitura de 8 min",
+        tools: ["Pano branco limpo", "Detergente neutro", "Água oxigenada 10 volumes", "Álcool 70%", "Bicarbonato", "Gelo"],
+        warning: "Teste qualquer produto num cantinho escondido da peça primeiro. E nunca esfregue mancha fresca com força: o certo é ABSORVER, trabalhando das bordas para o centro — esfregar espalha e fixa.",
+        steps: [
+          "Aja imediatamente: mancha fresca sai fácil; mancha que secou (ou pegou ferro/secadora) fixa nas fibras.",
+          "Absorva o excesso com papel ou pano branco, sem esfregar, sempre de fora para dentro.",
+          "Identifique a família da mancha: gordura, pigmento (vinho, café), proteína (sangue, suor) ou tinta — cada uma tem seu tratamento na tabela abaixo.",
+          "Aplique o tratamento indicado e deixe agir de 10 a 30 minutos.",
+          "Enxágue com água fria e lave a peça normalmente.",
+          "Confira ANTES de secar: só passe ferro ou leve à secadora quando a mancha tiver saído por completo — calor fixa o que sobrou."
+        ],
+        tip: "Água oxigenada 10 volumes é o coringa seguro para manchas orgânicas (sangue, suor, molho) em tecidos claros — e custa pouco em qualquer farmácia.",
+        html: STAIN_TABLE_HTML
+      },
+      {
         id: "rotina-limpeza",
         title: "Montando uma rotina de limpeza realista",
         difficulty: "easy",
@@ -704,6 +803,17 @@ const MODULES = [
         ],
         answer: 1,
         explain: "Consistência vence intensidade: 10-15 minutos diários evitam o acúmulo que transforma a limpeza em um evento exaustivo."
+      },
+      {
+        q: "Mancha de sangue na roupa: qual temperatura de água usar?",
+        options: [
+          "Quente, para 'dissolver' mais rápido",
+          "Fria — água quente cozinha a proteína e fixa a mancha para sempre",
+          "Morna, é o meio-termo ideal",
+          "Tanto faz, o que importa é o sabão"
+        ],
+        answer: 1,
+        explain: "Sangue é proteína: calor a coagula dentro das fibras, como um ovo cozinhando. Água fria + sabão resolve; em tecidos claros, água oxigenada 10 volumes completa o serviço."
       }
     ]
   },

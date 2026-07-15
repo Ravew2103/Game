@@ -133,9 +133,11 @@ function guideHTML(mod, g) {
       </button>
       <div class="guide-body">
         ${g.warning ? `<div class="callout callout-danger"><span>⚠️</span><div><strong>Segurança primeiro:</strong> ${g.warning}</div></div>` : ""}
+        ${g.figure ? `<figure class="figure">${g.figure.svg}<figcaption class="figure-caption">${g.figure.caption}</figcaption></figure>` : ""}
         <strong style="font-size:.85rem">🧰 Você vai precisar de:</strong>
         <div class="tools-list">${g.tools.map(t => `<span>${t}</span>`).join("")}</div>
         <ol class="steps">${g.steps.map(s => `<li>${s}</li>`).join("")}</ol>
+        ${g.html || ""}
         ${g.tip ? `<div class="callout callout-tip"><span>💡</span><div><strong>Dica de quem sabe:</strong> ${g.tip}</div></div>` : ""}
         <div class="guide-actions">
           <button class="btn ${done ? "btn-ghost" : "btn-primary"} btn-sm guide-done-btn" type="button">
